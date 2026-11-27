@@ -384,6 +384,7 @@
     layers.rugs = mk('g');
     svg.appendChild(layers.rugs);
     layers.rugFaces = {};
+    layers.labels = mk('g');
     ROOM_KEYS.forEach(function (key) {
       const r = ROOMS[key];
       const tone = key === 'office'
@@ -397,8 +398,9 @@
       });
       layers.rugFaces[key] = face;
       const lab = key === 'lounge'
-        ? label(g, r.name, r.x1 - 10, r.y1 - 8, 8, tone.ink, 30)
-        : label(g, r.name, r.x0 + 14, r.y0 + 12, 8, tone.ink);
+        ? label(layers.labels, r.name, r.x1 - 10, r.y1 - 8, 8, tone.ink, 30)
+        : label(layers.labels, r.name, r.x0 + 14, r.y0 + 12, 8, tone.ink);
+      lab.addEventListener('click', function () { moveMe(key); });
       g.addEventListener('click', function () { moveMe(key); });
       g.addEventListener('keydown', function (ev) {
         if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); moveMe(key); }
@@ -425,8 +427,9 @@
     /* 화분 */
     plant(furn, 46, 352, 1.05);
     plant(furn, 524, 20, 0.95);
-    plant(furn, 524, 376, 1);
+    plant(furn, 330, 384, 1);
     svg.appendChild(furn);
+    svg.appendChild(layers.labels);
 
     /* 캐릭터 자리 */
     layers.chars = mk('g');
