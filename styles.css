@@ -119,9 +119,10 @@ button { font: inherit; color: inherit; }
 
 .mini-avatar{
   width: 26px; height: 26px; border-radius: 50%;
-  display: inline-block; overflow: hidden; flex: 0 0 auto;
-  background: #f1e6d5;
+  display: inline-grid; place-items: center; overflow: hidden; flex: 0 0 auto;
+  background: #f3ead9; color: #b7a992;
 }
+.mini-avatar svg{ width: 18px; height: 18px; display: block; }
 .mini-avatar img{ width: 100%; height: 100%; object-fit: cover; object-position: 50% 12%; display: block; }
 
 /* ── 무대 ──────────────────────────────── */

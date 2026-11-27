@@ -32,10 +32,10 @@
       { x: 47.8, y: 47.5, h: 0.228 }
     ],
     lounge: [
-      { x: 65.5, y: 73.0, h: 0.255 },
-      { x: 72.6, y: 75.0, h: 0.265 },
-      { x: 82.0, y: 69.0, h: 0.250 },
-      { x: 87.5, y: 76.5, h: 0.262 }
+      { x: 61.0, y: 74.5, h: 0.258 },
+      { x: 73.8, y: 76.0, h: 0.265 },
+      { x: 79.6, y: 74.5, h: 0.258 },
+      { x: 86.5, y: 77.5, h: 0.265 }
     ]
   };
 
@@ -475,7 +475,7 @@
     if (m) {
       myMini.innerHTML = '<img src="' + avatarSrc(m, state.meId) + '" alt="">';
     } else {
-      myMini.innerHTML = '';
+      myMini.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12.2a4.1 4.1 0 1 0 0-8.2 4.1 4.1 0 0 0 0 8.2Zm0 2.1c-3.9 0-7 1.9-7 4.3V20h14v-1.4c0-2.4-3.1-4.3-7-4.3Z" fill="currentColor"/></svg>';
     }
   }
 
@@ -816,7 +816,7 @@
           + '<p class="field-hint" id="pfSeatHint">이미 있는 자리를 고르면 새로 만들지 않고 그 자리 이름만 바뀌어요.</p></div>'
         : '')
       + '<div class="field"><label for="pfName">비서 이름</label>'
-      + '<input id="pfName" type="text" maxlength="12" placeholder="예: 세비, 호우" value="' + escapeHtml(startName) + '"></div>'
+      + '<input id="pfName" type="text" maxlength="12" placeholder="이름을 적어 주세요" value="' + escapeHtml(startName) + '"></div>'
       + '<div class="field"><label>내 모습</label><div class="picker" id="pfFace"></div></div>'
       + '<div class="field"><label>이름표 색</label><div class="picker" id="pfColor"></div></div>'
       + '<div class="preview" id="pfPreview"></div>'
