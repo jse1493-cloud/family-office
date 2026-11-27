@@ -652,9 +652,9 @@
         + avatarHtml(m.glyph, m.color)
         + '<div class="msg-body">'
         + '<div class="msg-head"><b>' + escapeHtml(m.name || '이름 없음') + '</b>'
-        + '<span class="time">' + clockText(m.ts) + '</span></div>'
+        + '<span class="time">' + clockText(m.ts) + '</span>'
+        + '<button class="msg-make" type="button" data-text="' + escapeHtml(m.text) + '">＋ 할 일</button></div>'
         + '<div class="msg-text">' + textHtml + '</div>'
-        + '<div class="msg-actions"><button class="msg-make" type="button" data-text="' + escapeHtml(m.text) + '">＋ 할 일로 만들기</button></div>'
         + '</div></div>';
     }).join('') || '<p class="empty">아직 대화가 없어요.<br>먼저 인사를 건네 보세요 :)</p>';
 

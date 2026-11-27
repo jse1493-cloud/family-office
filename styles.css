@@ -144,7 +144,7 @@ button { font: inherit; color: inherit; }
   flex-direction: column;
   min-height: 0;
 }
-#office{ flex: 1 1 auto; width: 100%; min-height: 0; display: block; }
+#office{ flex: 1 1 0; width: 100%; min-height: 0; display: block; }
 #office .room{ cursor: pointer; }
 #office .room .rug-face{ transition: filter .18s ease; }
 #office .room:hover .rug-face{ filter: brightness(1.05) saturate(1.05); }
@@ -301,7 +301,7 @@ button { font: inherit; color: inherit; }
 .msg{ display: flex; gap: 10px; align-items: flex-start; }
 .msg .avatar{ margin-top: 2px; }
 .msg-body{ min-width: 0; flex: 1; }
-.msg-head{ display: flex; align-items: baseline; gap: 7px; }
+.msg-head{ display: flex; align-items: center; gap: 7px; }
 .msg-head b{ font-size: 13.5px; font-weight: 800; }
 .msg-head .time{ font-size: 11px; color: var(--muted); font-weight: 600; }
 .msg-text{
@@ -313,15 +313,16 @@ button { font: inherit; color: inherit; }
   background: #f6f2ff; border-radius: 4px 14px 14px 14px;
   padding: 8px 12px; margin-top: 5px;
 }
-.msg-actions{ margin-top: 4px; height: 0; overflow: visible; }
+.msg-actions{ display: none; }
 .msg-make{
-  opacity: 0; transform: translateY(-2px);
+  margin-left: auto;
+  opacity: 0; pointer-events: none;
   border: 1px solid var(--line); background: rgba(255,255,255,.9);
-  color: var(--ink-soft); font-size: 11.5px; font-weight: 700;
-  padding: 4px 9px; border-radius: 999px; cursor: pointer;
+  color: var(--ink-soft); font-size: 11px; font-weight: 700;
+  padding: 3px 8px; border-radius: 999px; cursor: pointer;
   transition: all .16s ease;
 }
-.msg:hover .msg-make{ opacity: 1; transform: none; }
+.msg:hover .msg-make{ opacity: 1; pointer-events: auto; }
 .msg-make:hover{ color: var(--violet-deep); border-color: rgba(124,108,246,.4); }
 
 .avatar{
