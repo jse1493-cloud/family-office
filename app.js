@@ -417,6 +417,7 @@
       + (isMe
         ? '<div class="charcard-edit"><input id="cardStatus" type="text" maxlength="30" placeholder="지금 상태를 적어 주세요" value="'
           + escapeHtml(m.status || '') + '"><button id="cardStatusSave" type="button">저장</button></div>'
+          + '<div class="charcard-links"><button id="cardRename" type="button">이름 바꾸기</button></div>'
         : '');
 
     card.classList.remove('hidden');
@@ -434,6 +435,7 @@
 
     $('.x', card).addEventListener('click', closeCard);
     if (isMe) {
+      $('#cardRename', card).addEventListener('click', function () { closeCard(); openProfile(false); });
       $('#cardStatusSave', card).addEventListener('click', function () {
         const v = $('#cardStatus', card).value.trim().slice(0, 30);
         store.update('members/' + id, { status: v || '출근 완료' })
@@ -781,35 +783,69 @@
     return $('.modal', layer);
   }
 
+  function seatList() {
+    return Object.keys(state.members)
+      .filter(id => state.members[id] && state.members[id].name)
+      .map(id => ({ id: id, m: state.members[id] }))
+      .sort(function (a, b) { return (a.m.joinedAt || 0) - (b.m.joinedAt || 0); });
+  }
+
   function openProfile(isFirst) {
     if (isFirst === true && state.onboarded) return;
     if (isFirst === true) state.onboarded = true;
 
     const m = me() || {};
+    const seats = seatList();
+    const mineSeat = state.meId && state.members[state.meId] ? state.meId : null;
     const sel = {
+      seat: mineSeat,
       avatar: m.avatar && AVATARS[m.avatar] ? m.avatar : pickAvatar(m.name, state.meId),
       color: m.color || 'beige'
     };
+    const startName = mineSeat ? state.members[mineSeat].name : (m.name || '');
 
     const modal = openModal(''
-      + '<h3>' + (isFirst ? '처음 오셨네요!' : '내 프로필') + '</h3>'
+      + '<h3>' + (isFirst ? '어느 자리로 들어갈까요?' : '내 프로필') + '</h3>'
       + '<p class="sub">' + (isFirst
-        ? '사무실에 세울 내 모습을 골라 주세요. 나중에 언제든 바꿀 수 있어요.'
-        : '얼굴과 이름표를 바꾸면 사무실에 바로 보여요.') + '</p>'
+        ? (seats.length
+          ? '이미 사무실에 있는 자리를 그대로 이어 쓰거나, 새 자리를 만들 수 있어요.'
+          : '사무실에 세울 내 모습을 골라 주세요. 나중에 언제든 바꿀 수 있어요.')
+        : '이름·얼굴·이름표 색을 바꾸면 사무실에 바로 보여요.') + '</p>'
+      + (seats.length
+        ? '<div class="field"><label>내 자리</label><div class="picker seats" id="pfSeat"></div>'
+          + '<p class="field-hint" id="pfSeatHint">이미 있는 자리를 고르면 새로 만들지 않고 그 자리 이름만 바뀌어요.</p></div>'
+        : '')
       + '<div class="field"><label for="pfName">비서 이름</label>'
-      + '<input id="pfName" type="text" maxlength="12" placeholder="예: 디노, 어머니의 비서" value="' + escapeHtml(m.name || '') + '"></div>'
+      + '<input id="pfName" type="text" maxlength="12" placeholder="예: 세비, 호우" value="' + escapeHtml(startName) + '"></div>'
       + '<div class="field"><label>내 모습</label><div class="picker" id="pfFace"></div></div>'
       + '<div class="field"><label>이름표 색</label><div class="picker" id="pfColor"></div></div>'
       + '<div class="preview" id="pfPreview"></div>'
       + '<div class="modal-actions">'
-      + (isFirst ? '' : '<button class="btn ghost" id="pfCancel" type="button">닫기</button>')
-      + '<button class="btn primary" id="pfSave" type="button">' + (isFirst ? '들어가기' : '저장') + '</button>'
+      + '<button class="btn ghost" id="pfCancel" type="button">' + (isFirst ? '나중에 할게요' : '닫기') + '</button>'
+      + '<button class="btn primary" id="pfSave" type="button">' + (isFirst ? '이 자리로 들어가기' : '저장') + '</button>'
       + '</div>');
 
     const faceHost = $('#pfFace', modal);
     const colorHost = $('#pfColor', modal);
+    const seatHost = $('#pfSeat', modal);
+
+    function paintSeats() {
+      if (!seatHost) return;
+      seatHost.innerHTML = seats.map(function (s) {
+        const roomName = (ROOMS[s.m.room] || ROOMS.office).name;
+        return '<button class="seat-btn' + (sel.seat === s.id ? ' on' : '') + '" type="button" data-seat="' + escapeHtml(s.id) + '">'
+          + '<span class="avatar"><img src="' + avatarSrc(s.m, s.id) + '" alt=""></span>'
+          + '<span class="seat-txt"><b>' + escapeHtml(s.m.name) + '</b>'
+          + '<i>' + escapeHtml(roomName) + (s.id === mineSeat ? ' · 지금 내 자리' : '') + '</i></span>'
+          + '</button>';
+      }).join('')
+        + '<button class="seat-btn new' + (sel.seat === null ? ' on' : '') + '" type="button" data-seat="">'
+        + '<span class="seat-plus">＋</span>'
+        + '<span class="seat-txt"><b>새 자리</b><i>새로 만들기</i></span></button>';
+    }
 
     function paint() {
+      paintSeats();
       faceHost.innerHTML = AVATAR_KEYS.map(k =>
         '<button class="face-btn' + (k === sel.avatar ? ' on' : '') + '" type="button" data-a="' + k + '" aria-label="' + AVATARS[k].label + '" title="' + AVATARS[k].label + '">'
         + '<img src="' + AVATARS[k].src + '" alt=""></button>'
@@ -819,11 +855,30 @@
         return '<button class="swatch' + (k === sel.color ? ' on' : '') + '" type="button" data-c="' + k + '" aria-label="' + c.name + '" title="' + c.name + '" '
           + 'style="background:radial-gradient(circle at 34% 26%,' + c.light + ' 0%,' + c.base + ' 56%,' + c.dark + ' 100%)"></button>';
       }).join('');
+      const isRename = !!(sel.seat && state.members[sel.seat] && state.members[sel.seat].name !== $('#pfName', modal).value.trim());
       $('#pfPreview', modal).innerHTML = faceHtml(sel.avatar)
         + '<div><b>' + escapeHtml($('#pfName', modal).value.trim() || '이름을 적어 주세요') + '</b>'
-        + '<span>이 모습으로 사무실에 서 있어요</span></div>';
+        + '<span>' + (sel.seat
+          ? (isRename ? '이 자리의 이름이 이렇게 바뀌어요' : '지금 쓰고 있는 자리예요')
+          : '새 자리로 사무실에 서요') + '</span></div>';
     }
 
+    if (seatHost) {
+      seatHost.addEventListener('click', function (e) {
+        const b = e.target.closest('[data-seat]');
+        if (!b) return;
+        const id = b.getAttribute('data-seat');
+        sel.seat = id || null;
+        const input = $('#pfName', modal);
+        if (id && state.members[id]) {
+          const sm = state.members[id];
+          sel.avatar = avatarKey(sm, id);
+          sel.color = sm.color || sel.color;
+          input.value = sm.name || '';
+        }
+        paint();
+      });
+    }
     faceHost.addEventListener('click', function (e) {
       const b = e.target.closest('[data-a]');
       if (!b) return;
@@ -840,7 +895,7 @@
     $('#pfName', modal).addEventListener('keydown', function (e) {
       if (e.key === 'Enter') { e.preventDefault(); save(); }
     });
-    if (!isFirst) $('#pfCancel', modal).addEventListener('click', closeModal);
+    $('#pfCancel', modal).addEventListener('click', closeModal);
 
     async function save() {
       const name = $('#pfName', modal).value.trim().slice(0, 12);
@@ -848,9 +903,9 @@
       const btn = $('#pfSave', modal);
       btn.disabled = true;
       try {
-        await applyProfile(name, sel.avatar, sel.color);
+        const renamed = await applyProfile(name, sel.avatar, sel.color, sel.seat);
         closeModal();
-        toast(isFirst ? '환영해요, ' + name + '님!' : '이름표를 바꿨어요');
+        toast(renamed ? '이름을 \'' + name + '\'으로 바꿨어요' : (isFirst ? '환영해요, ' + name + '님!' : '이름표를 바꿨어요'));
       } catch (e) {
         btn.disabled = false;
         toast('저장하지 못했어요. 잠시 후 다시 해 주세요.');
@@ -859,23 +914,30 @@
     $('#pfSave', modal).addEventListener('click', save);
 
     paint();
-    setTimeout(() => { const n = $('#pfName', modal); if (!m.name) n.focus(); }, 60);
+    setTimeout(() => { const n = $('#pfName', modal); if (!startName) n.focus(); }, 60);
   }
 
-  async function applyProfile(name, avatar, colorKey) {
-    let id = state.meId;
-    let base = id && state.members[id] ? state.members[id] : null;
+  /* 고른 자리가 있으면 그 키의 이름만 바꾸고, 없으면 같은 이름의 자리를 찾아 이어 쓰고,
+     그래도 없을 때만 새 키를 만들어요 — 한 사람당 자리 하나. */
+  async function applyProfile(name, avatar, colorKey, seatId) {
+    let id = null;
+    let base = null;
 
-    if (!id) {
-      /* 같은 이름의 자리가 이미 있으면 그 자리로 들어가요 (예: 먼저 만들어 둔 '디노') */
+    if (seatId && state.members[seatId]) {
+      id = seatId;
+      base = state.members[seatId];
+    } else if (state.meId && state.members[state.meId]) {
+      id = state.meId;
+      base = state.members[state.meId];
+    } else {
+      /* 같은 이름의 자리가 이미 있으면 그 자리로 들어가요 */
       const same = Object.keys(state.members).filter(k => state.members[k] && state.members[k].name === name);
       const found = same.find(k => !state.members[k].claimed) || (same.length === 1 ? same[0] : null);
       if (found) { id = found; base = state.members[found]; }
       else id = 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-    } else if (!base) {
-      base = null;
     }
 
+    const renamed = !!(base && base.name && base.name !== name);
     const rec = {
       name: name,
       avatar: avatar,
@@ -891,6 +953,7 @@
     state.meId = id;
     state.members[id] = Object.assign({}, base || {}, rec);
     renderAll();
+    return renamed;
   }
 
   function openInvite() {
