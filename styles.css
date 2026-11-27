@@ -197,8 +197,8 @@ button { font: inherit; color: inherit; }
 .zone:focus-visible .zone-glow{ opacity: .9; box-shadow: inset 0 0 0 2px rgba(124,108,246,.45); }
 .zone.on .zone-glow{
   opacity: 1;
-  background: radial-gradient(62% 58% at 50% 58%, rgba(124,108,246,.10), rgba(124,108,246,0) 76%);
-  box-shadow: inset 0 0 0 2px rgba(124,108,246,.3);
+  background: radial-gradient(60% 55% at 50% 56%, rgba(124,108,246,.09), rgba(124,108,246,0) 76%);
+  box-shadow: none;
 }
 .zone-label{
   position: absolute;
