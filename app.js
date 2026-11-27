@@ -267,7 +267,7 @@
     const p = iso(cx, cy, 0);
     parent.appendChild(mk('ellipse', {
       cx: p[0] + 4, cy: p[1] + 8, rx: r * ISO.c * 1.32, ry: r * ISO.c * 0.66,
-      fill: 'rgba(126,98,72,.16)', filter: 'url(#soft)'
+      fill: 'rgba(126,98,72,.10)', filter: 'url(#soft)'
     }));
     const topP = iso(cx, cy, z);
     parent.appendChild(mk('ellipse', {
@@ -429,6 +429,7 @@
     box(furn, 104, 78, 148, 100, 42, 49, '#dfe4f1', '#b9c1d6', '#c9d0e2');
     box(furn, 118, 146, 150, 176, 0, 26, '#e9d8f2', '#d0b9dd', '#dcc7e8');
     /* 회의실 — 둥근 탁자 */
+    box(furn, 404, 99, 426, 121, 0, 44, '#f6e6d2', '#ddc3a4', '#ecd4b8');
     disc(furn, 415, 110, 36, 44, 44, '#fffaf2', '#e3c6a4');
     box(furn, 400, 42, 430, 66, 0, 24, '#ffd9c8', '#e8b39c', '#f6c6b2');
     box(furn, 446, 140, 476, 164, 0, 24, '#ffd9c8', '#e8b39c', '#f6c6b2');
