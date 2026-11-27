@@ -484,19 +484,21 @@ button { font: inherit; color: inherit; }
 }
 .steps li{
   counter-increment: step;
-  display: grid; grid-template-columns: 26px 1fr; gap: 10px;
+  display: grid; grid-template-columns: 26px minmax(0, 1fr); grid-template-rows: auto auto;
+  column-gap: 10px; row-gap: 2px; align-items: start;
   background: #fff; border: 1px solid rgba(120,105,150,.1);
   border-radius: 16px; padding: 12px 14px;
 }
 .steps li::before{
+  grid-column: 1; grid-row: 1 / span 2;
   content: counter(step);
   width: 26px; height: 26px; border-radius: 50%;
   background: var(--violet-soft); color: var(--violet-deep);
   font-size: 12.5px; font-weight: 800;
   display: grid; place-items: center;
 }
-.steps b{ font-size: 13.5px; font-weight: 800; display: block; }
-.steps span{ font-size: 12.5px; color: var(--ink-soft); font-weight: 600; }
+.steps b{ grid-column: 2; font-size: 13.5px; font-weight: 800; display: block; }
+.steps span{ grid-column: 2; font-size: 12.5px; color: var(--ink-soft); font-weight: 600; }
 
 .invite-code{
   flex: 1 1 auto; min-height: 0;
