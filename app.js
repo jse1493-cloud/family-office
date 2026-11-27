@@ -471,11 +471,14 @@
     ).join('') + (list.length ? '<span class="count">' + list.length + '명 함께</span>' : '');
 
     const myMini = $('#myMiniAvatar');
+    const myLabel = $('#btnProfile span:last-child');
     const m = me();
     if (m) {
       myMini.innerHTML = '<img src="' + avatarSrc(m, state.meId) + '" alt="">';
+      if (myLabel) myLabel.textContent = '내 프로필 · ' + m.name;
     } else {
       myMini.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12.2a4.1 4.1 0 1 0 0-8.2 4.1 4.1 0 0 0 0 8.2Zm0 2.1c-3.9 0-7 1.9-7 4.3V20h14v-1.4c0-2.4-3.1-4.3-7-4.3Z" fill="currentColor"/></svg>';
+      if (myLabel) myLabel.textContent = '내 프로필';
     }
   }
 
