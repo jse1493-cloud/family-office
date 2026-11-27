@@ -200,37 +200,12 @@ button { font: inherit; color: inherit; }
   background: radial-gradient(60% 55% at 50% 56%, rgba(124,108,246,.09), rgba(124,108,246,0) 76%);
   box-shadow: none;
 }
-.zone-label{
-  position: absolute;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  display: inline-block;
-  white-space: nowrap;
-  font-size: 12.5px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: #5b5245;
-  background: rgba(255,255,255,.92);
-  border: 1px solid rgba(255,255,255,.95);
-  border-radius: 999px;
-  padding: 5px 12px;
-  box-shadow: 0 8px 18px -12px rgba(96,70,45,.75);
-  backdrop-filter: blur(6px);
-}
-.zone.on .zone-label{
-  color: #5d4ee0;
-  background: #fff;
-  border-color: rgba(124,108,246,.35);
-}
 
 /* 구역 자리 (장면 % 좌표) */
 .z-office{ left: 5%;  top: 24%; width: 36%; height: 52%; }
 .z-meeting{ left: 42%; top: 17%; width: 29%; height: 39%; }
 .z-lounge{ left: 59%; top: 41%; width: 35%; height: 42%; }
 
-.z-office .zone-label{ left: 27.8%; top: 84.6%; }
-.z-meeting .zone-label{ left: 46.6%; top: 103.8%; }
-.z-lounge .zone-label{ left: 57.1%; top: 88.1%; }
 
 /* 비서들 */
 .actors{
@@ -878,7 +853,6 @@ button { font: inherit; color: inherit; }
   .people .count{ display: none; }
   .map-hint{ display: none; }
   .map-footer{ justify-content: center; }
-  .zone-label{ font-size: 11px; padding: 4px 9px; }
   .panel{ height: 72vh; min-height: 460px; }
   .modal{ padding: 20px; border-radius: 22px; }
 }

@@ -39,12 +39,12 @@
     ]
   };
 
-  /* 비서 얼굴(3D 클레이) */
+  /* 비서 얼굴(3D 클레이) — 남자 1 · 여자 2 · 엄마 1 */
   const AVATARS = {
-    dino:   { src: 'assets/char-dino.png?v=2',   scale: 0.84, label: '동글 로봇' },
-    mom:    { src: 'assets/char-mom.png?v=2',    scale: 1,    label: '다정한 어른' },
-    guest1: { src: 'assets/char-guest1.png?v=2', scale: 1,    label: '분홍 머리' },
-    guest2: { src: 'assets/char-guest2.png?v=2', scale: 1,    label: '파란 후드' }
+    man:    { src: 'assets/char-man.png',    scale: 1, label: '안경 쓴 남자' },
+    woman1: { src: 'assets/char-woman1.png', scale: 1, label: '단발 여자' },
+    woman2: { src: 'assets/char-woman2.png', scale: 1, label: '긴머리 여자' },
+    mom:    { src: 'assets/char-mom.png',    scale: 1, label: '따뜻한 엄마' }
   };
   const AVATAR_KEYS = Object.keys(AVATARS);
 
@@ -114,8 +114,8 @@
 
   function pickAvatar(name, id) {
     const s = String(name == null ? '' : name) + '|' + String(id == null ? '' : id);
-    if (/디노|dino/i.test(s)) return 'dino';
     if (/엄마|어머니|맘|mom/i.test(s)) return 'mom';
+    if (/아빠|아버지|남편|dad/i.test(s)) return 'man';
     let h = 0;
     for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 9973;
     return AVATAR_KEYS[h % AVATAR_KEYS.length];
@@ -134,8 +134,8 @@
       if (avatarCache.has(id)) return;
       const n = String(state.members[id].name);
       let want = null;
-      if (/디노|dino/i.test(n)) want = 'dino';
-      else if (/엄마|어머니|맘|mom/i.test(n)) want = 'mom';
+      if (/엄마|어머니|맘|mom/i.test(n)) want = 'mom';
+      else if (/아빠|아버지|남편|dad/i.test(n)) want = 'man';
       if (want && !used.has(want)) { avatarCache.set(id, want); used.add(want); }
     });
 
