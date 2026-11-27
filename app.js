@@ -20,10 +20,10 @@
   /* 방 안에서 서는 자리 — 그림 위 좌표(%), 그림 높이에 대한 키 비율(h) */
   const ROOM_SLOTS = {
     office: [
-      { x: 42.0, y: 66.0, h: 0.252 },
-      { x: 37.0, y: 72.5, h: 0.262 },
-      { x: 46.6, y: 60.0, h: 0.240 },
-      { x: 30.5, y: 73.0, h: 0.258 }
+      { x: 41.5, y: 67.5, h: 0.252 },
+      { x: 35.0, y: 72.5, h: 0.262 },
+      { x: 47.0, y: 58.0, h: 0.238 },
+      { x: 29.0, y: 73.0, h: 0.258 }
     ],
     meeting: [
       { x: 49.6, y: 48.0, h: 0.212 },
@@ -41,10 +41,10 @@
 
   /* 비서 얼굴(3D 클레이) */
   const AVATARS = {
-    dino:   { src: 'assets/char-dino.png',   scale: 0.84, label: '동글 로봇' },
-    mom:    { src: 'assets/char-mom.png',    scale: 1,    label: '다정한 어른' },
-    guest1: { src: 'assets/char-guest1.png', scale: 1,    label: '분홍 머리' },
-    guest2: { src: 'assets/char-guest2.png', scale: 1,    label: '파란 후드' }
+    dino:   { src: 'assets/char-dino.png?v=2',   scale: 0.84, label: '동글 로봇' },
+    mom:    { src: 'assets/char-mom.png?v=2',    scale: 1,    label: '다정한 어른' },
+    guest1: { src: 'assets/char-guest1.png?v=2', scale: 1,    label: '분홍 머리' },
+    guest2: { src: 'assets/char-guest2.png?v=2', scale: 1,    label: '파란 후드' }
   };
   const AVATAR_KEYS = Object.keys(AVATARS);
 
