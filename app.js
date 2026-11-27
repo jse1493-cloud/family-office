@@ -16,20 +16,20 @@
   const ROOM_KEYS = Object.keys(ROOMS);
 
   const ROOM_SLOTS = {
-    office:  [[105, 195], [180, 195], [255, 195], [105, 250], [180, 250], [255, 250], [150, 292], [225, 292]],
-    meeting: [[345, 62], [485, 62], [345, 158], [485, 158], [415, 46], [415, 172]],
-    lounge:  [[355, 345], [465, 345], [410, 345], [355, 220], [465, 220], [410, 196]]
+    office:  [[100, 200], [175, 200], [250, 200], [100, 255], [175, 255], [250, 255], [175, 292]],
+    meeting: [[350, 158], [480, 158], [345, 100], [485, 100], [415, 174]],
+    lounge:  [[350, 345], [415, 345], [480, 345], [350, 318], [480, 318]]
   };
 
   const COLORS = {
-    beige:  { base: '#f0d7b4', light: '#fff3de', dark: '#cfae86', ink: '#7a5a35', ring: '#fff' },
-    mint:   { base: '#a8e3c9', light: '#e0fbf0', dark: '#79bd9f', ink: '#2f6b53', ring: '#fff' },
-    pink:   { base: '#ffc2d1', light: '#ffe7ee', dark: '#e89aae', ink: '#8d4358', ring: '#fff' },
-    violet: { base: '#c9befe', light: '#eee9ff', dark: '#a394e8', ink: '#57468f', ring: '#fff' },
-    sky:    { base: '#b8dcff', light: '#e9f5ff', dark: '#8bb9e6', ink: '#2f5c85', ring: '#fff' },
-    lemon:  { base: '#ffe6a0', light: '#fff8dc', dark: '#e5c66a', ink: '#7d6220', ring: '#fff' },
-    peach:  { base: '#ffcdaa', light: '#ffede1', dark: '#e9a87e', ink: '#8a5432', ring: '#fff' },
-    lilac:  { base: '#e3d4f7', light: '#f7f0ff', dark: '#c0a9e0', ink: '#5f4a80', ring: '#fff' }
+    beige:  { name: '베이지', base: '#f0d7b4', light: '#fff3de', dark: '#cfae86', ink: '#7a5a35' },
+    mint:   { name: '민트',   base: '#a8e3c9', light: '#e0fbf0', dark: '#79bd9f', ink: '#2f6b53' },
+    pink:   { name: '분홍',   base: '#ffc2d1', light: '#ffe7ee', dark: '#e89aae', ink: '#8d4358' },
+    violet: { name: '보라',   base: '#c9befe', light: '#eee9ff', dark: '#a394e8', ink: '#57468f' },
+    sky:    { name: '하늘',   base: '#b8dcff', light: '#e9f5ff', dark: '#8bb9e6', ink: '#2f5c85' },
+    lemon:  { name: '노랑',   base: '#ffe6a0', light: '#fff8dc', dark: '#e5c66a', ink: '#7d6220' },
+    peach:  { name: '살구',   base: '#ffcdaa', light: '#ffede1', dark: '#e9a87e', ink: '#8a5432' },
+    lilac:  { name: '라일락', base: '#e3d4f7', light: '#f7f0ff', dark: '#c0a9e0', ink: '#5f4a80' }
   };
   const COLOR_KEYS = Object.keys(COLORS);
   const GLYPHS = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
@@ -61,6 +61,11 @@
     ));
   }
   function two(n) { return n < 10 ? '0' + n : '' + n; }
+  function withRo(word) {
+    const code = String(word).charCodeAt(String(word).length - 1);
+    const jong = code >= 0xAC00 && code <= 0xD7A3 ? (code - 0xAC00) % 28 : 1;
+    return word + (jong && jong !== 8 ? '으로' : '로');
+  }
   function clockText(ts) {
     if (!ts) return '';
     const d = new Date(ts);
@@ -347,22 +352,22 @@
     walls.appendChild(poly([iso(0, 0, 12), iso(0, 400, 12), iso(0, 400, 0), iso(0, 0, 0)], { fill: 'rgba(255,255,255,.4)' }));
 
     /* 왼쪽 벽 동그란 창 */
-    const win = mk('g', { transform: 'matrix(-0.86 0.43 0 -0.86 430 248)' });
-    win.appendChild(mk('circle', { cx: 205, cy: 82, r: 47, fill: 'url(#sky)' }));
-    win.appendChild(mk('ellipse', { cx: 190, cy: 66, rx: 17, ry: 9, fill: 'rgba(255,255,255,.85)' }));
-    win.appendChild(mk('ellipse', { cx: 224, cy: 88, rx: 12, ry: 7, fill: 'rgba(255,255,255,.7)' }));
-    win.appendChild(mk('ellipse', { cx: 208, cy: 112, rx: 26, ry: 8, fill: 'rgba(150,205,150,.55)' }));
-    win.appendChild(mk('circle', { cx: 205, cy: 82, r: 47, fill: 'none', stroke: '#fff', 'stroke-width': 7 }));
-    win.appendChild(mk('circle', { cx: 205, cy: 82, r: 51, fill: 'none', stroke: 'rgba(220,198,172,.7)', 'stroke-width': 2 }));
+    const win = mk('g', { transform: 'matrix(-0.86 0.43 0 0.86 430 248)' });
+    win.appendChild(mk('circle', { cx: 205, cy: -82, r: 47, fill: 'url(#sky)' }));
+    win.appendChild(mk('ellipse', { cx: 190, cy: -66, rx: 17, ry: 9, fill: 'rgba(255,255,255,.85)' }));
+    win.appendChild(mk('ellipse', { cx: 224, cy: -88, rx: 12, ry: 7, fill: 'rgba(255,255,255,.7)' }));
+    win.appendChild(mk('ellipse', { cx: 208, cy: -112, rx: 26, ry: 8, fill: 'rgba(150,205,150,.55)' }));
+    win.appendChild(mk('circle', { cx: 205, cy: -82, r: 47, fill: 'none', stroke: '#fff', 'stroke-width': 7 }));
+    win.appendChild(mk('circle', { cx: 205, cy: -82, r: 51, fill: 'none', stroke: 'rgba(220,198,172,.7)', 'stroke-width': 2 }));
     walls.appendChild(win);
 
     /* 오른쪽 벽 표찰 */
-    const sign = mk('g', { transform: 'matrix(0.86 0.43 0 -0.86 430 248)' });
-    sign.appendChild(mk('rect', { x: 148, y: 52, width: 190, height: 74, rx: 16, fill: '#fff8ef', stroke: '#ecd9bf', 'stroke-width': 2 }));
-    const t1 = mk('text', { x: 243, y: 84, 'text-anchor': 'middle', 'font-size': 21, 'font-weight': 800, fill: '#6b5c4a' });
+    const sign = mk('g', { transform: 'matrix(0.86 0.43 0 0.86 430 248)' });
+    sign.appendChild(mk('rect', { x: 148, y: -126, width: 190, height: 74, rx: 16, fill: '#fff8ef', stroke: '#ecd9bf', 'stroke-width': 2 }));
+    const t1 = mk('text', { x: 243, y: -94, 'text-anchor': 'middle', 'font-size': 21, 'font-weight': 800, fill: '#6b5c4a' });
     t1.textContent = '우리가족 오피스';
     sign.appendChild(t1);
-    const t2 = mk('text', { x: 243, y: 108, 'text-anchor': 'middle', 'font-size': 11, 'font-weight': 600, fill: '#a89479' });
+    const t2 = mk('text', { x: 243, y: -70, 'text-anchor': 'middle', 'font-size': 11, 'font-weight': 600, fill: '#a89479' });
     t2.textContent = '함께 쓰는 사무실';
     sign.appendChild(t2);
     walls.appendChild(sign);
@@ -384,10 +389,7 @@
         : key === 'meeting'
           ? { top: '#ffe4cc', side: '#f2cbaa', ink: '#8a5432' }
           : { top: '#e4ddff', side: '#cdc2f5', ink: '#57468f' };
-      const g = mk('g', { class: 'room', 'data-room': key, tabindex: '0', role: 'button' });
-      const title = mk('title');
-      title.textContent = r.name + ' — 눌러서 내 비서를 옮겨요';
-      g.appendChild(title);
+      const g = mk('g', { class: 'room', 'data-room': key, tabindex: '0', role: 'button', 'aria-label': r.name + ' — 눌러서 내 비서를 옮겨요' });
       const face = slab(g, r.x0, r.y0, r.x1, r.y1, 6, tone.top, {
         r: 22, side: tone.side, shadow: 'rgba(126,98,72,.16)', faceClass: 'rug-face'
       });
@@ -402,16 +404,18 @@
 
     /* 가구 */
     const furn = mk('g');
-    /* 열린 사무실 — 책상 */
-    box(furn, 72, 62, 206, 138, 0, 46, '#f9ead8', '#dcc3a8', '#ecd4ba');
-    box(furn, 116, 86, 162, 112, 46, 53, '#dfe4f1', '#b9c1d6', '#c9d0e2');
+    /* 열린 사무실 — 책상과 의자 */
+    box(furn, 68, 58, 196, 126, 0, 42, '#f9ead8', '#dcc3a8', '#ecd4ba');
+    box(furn, 104, 78, 148, 100, 42, 49, '#dfe4f1', '#b9c1d6', '#c9d0e2');
+    disc(furn, 132, 158, 17, 22, 22, '#e9d8f2', '#d3bcdd');
     /* 회의실 — 둥근 탁자 */
-    disc(furn, 415, 110, 46, 44, 44, '#fbead7', '#e2c8ab');
-    disc(furn, 415, 110, 12, 0, 40, '#e6d2ba', '#d3b899');
+    disc(furn, 415, 110, 36, 44, 44, '#fbead7', '#e2c8ab');
+    disc(furn, 415, 110, 10, 0, 40, '#e6d2ba', '#d3b899');
+    disc(furn, 415, 62, 15, 20, 20, '#ffd9c8', '#eab9a4');
+    disc(furn, 462, 150, 15, 20, 20, '#ffd9c8', '#eab9a4');
     /* 휴게실 — 소파 */
-    box(furn, 342, 268, 468, 318, 0, 36, '#ffd9bd', '#e8ab86', '#f6c3a2');
-    box(furn, 342, 244, 468, 268, 0, 78, '#ffcdaf', '#e3a37d', '#f7bfa0');
-    disc(furn, 410, 202, 30, 24, 24, '#fbead7', '#e2c8ab');
+    box(furn, 348, 258, 470, 306, 0, 34, '#ffd9bd', '#e8ab86', '#f6c3a2');
+    box(furn, 348, 238, 470, 260, 0, 72, '#ffcdaf', '#e3a37d', '#f7bfa0');
     /* 화분 */
     plant(furn, 46, 352, 1.05);
     plant(furn, 524, 20, 0.95);
@@ -576,7 +580,7 @@
     if (!m) { openProfile(true); return; }
     if (m.room === roomKey) { toast(ROOMS[roomKey].name + '에 이미 있어요'); return; }
     store.update('members/' + state.meId, { room: roomKey, movedAt: Date.now() })
-      .then(() => toast(ROOMS[roomKey].name + '으로 걸어갔어요'))
+      .then(() => toast(withRo(ROOMS[roomKey].name) + ' 걸어갔어요'))
       .catch(() => toast('잠시 후 다시 해 볼게요'));
   }
 
@@ -936,7 +940,7 @@
       ).join('');
       colorHost.innerHTML = COLOR_KEYS.map(k => {
         const c = COLORS[k];
-        return '<button class="swatch' + (k === sel.color ? ' on' : '') + '" type="button" data-c="' + k + '" aria-label="' + k + '" '
+        return '<button class="swatch' + (k === sel.color ? ' on' : '') + '" type="button" data-c="' + k + '" aria-label="' + c.name + '" title="' + c.name + '" '
           + 'style="background:radial-gradient(circle at 34% 26%,' + c.light + ' 0%,' + c.base + ' 56%,' + c.dark + ' 100%)"></button>';
       }).join('');
       const c = color(sel.color);
@@ -1121,6 +1125,7 @@
     store.listen('members', function (v) {
       state.members = v || {};
       state.membersLoaded = true;
+      $('#mapLoading').hidden = true;
       if (state.meId && !state.members[state.meId]) {
         localStorage.removeItem(ME_KEY);
         state.meId = null;
@@ -1141,6 +1146,7 @@
 
     renderAll();
     requestAnimationFrame(tick);
+    setTimeout(function () { if (!state.membersLoaded) $('#mapLoading').hidden = true; }, 6000);
   }
 
   function start() {
