@@ -20,22 +20,22 @@
   /* 방 안에서 서는 자리 — 그림 위 좌표(%), 그림 높이에 대한 키 비율(h) */
   const ROOM_SLOTS = {
     office: [
-      { x: 40.6, y: 64.0, h: 0.255 },
-      { x: 45.2, y: 55.5, h: 0.235 },
-      { x: 36.4, y: 71.0, h: 0.265 },
-      { x: 47.4, y: 68.2, h: 0.258 }
+      { x: 42.0, y: 66.0, h: 0.252 },
+      { x: 37.0, y: 72.5, h: 0.262 },
+      { x: 46.6, y: 60.0, h: 0.240 },
+      { x: 30.5, y: 73.0, h: 0.258 }
     ],
     meeting: [
-      { x: 51.4, y: 48.5, h: 0.212 },
-      { x: 58.4, y: 50.2, h: 0.222 },
-      { x: 62.6, y: 45.0, h: 0.208 },
-      { x: 48.6, y: 33.5, h: 0.198 }
+      { x: 49.6, y: 48.0, h: 0.212 },
+      { x: 56.6, y: 49.5, h: 0.222 },
+      { x: 62.6, y: 46.5, h: 0.208 },
+      { x: 52.2, y: 29.0, h: 0.196 }
     ],
     lounge: [
-      { x: 72.6, y: 71.0, h: 0.262 },
-      { x: 66.0, y: 65.5, h: 0.248 },
-      { x: 81.6, y: 67.0, h: 0.258 },
-      { x: 86.2, y: 77.0, h: 0.262 }
+      { x: 65.5, y: 73.0, h: 0.255 },
+      { x: 72.6, y: 75.0, h: 0.265 },
+      { x: 82.0, y: 69.0, h: 0.250 },
+      { x: 87.5, y: 76.5, h: 0.262 }
     ]
   };
 
@@ -108,7 +108,10 @@
     return (d.getMonth() + 1) + '월 ' + d.getDate() + '일';
   }
 
-  /* ───────── 비서 얼굴 고르기 ───────── */
+  /* ───────── 비서 얼굴 고르기 ─────────
+     고른 얼굴이 있으면 그것을, 없으면 이름이 맞는 얼굴을, 나머지는 겹치지 않게 차례로 나눠 줘요. */
+  const avatarCache = new Map();
+
   function pickAvatar(name, id) {
     const s = String(name == null ? '' : name) + '|' + String(id == null ? '' : id);
     if (/디노|dino/i.test(s)) return 'dino';
@@ -117,8 +120,38 @@
     for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 9973;
     return AVATAR_KEYS[h % AVATAR_KEYS.length];
   }
+
+  function rebuildAvatars() {
+    avatarCache.clear();
+    const ids = Object.keys(state.members).filter(id => state.members[id] && state.members[id].name);
+    ids.forEach(function (id) {
+      const a = state.members[id].avatar;
+      if (AVATARS[a]) avatarCache.set(id, a);
+    });
+    const used = new Set(avatarCache.values());
+
+    ids.forEach(function (id) {
+      if (avatarCache.has(id)) return;
+      const n = String(state.members[id].name);
+      let want = null;
+      if (/디노|dino/i.test(n)) want = 'dino';
+      else if (/엄마|어머니|맘|mom/i.test(n)) want = 'mom';
+      if (want && !used.has(want)) { avatarCache.set(id, want); used.add(want); }
+    });
+
+    const rest = ids.filter(id => !avatarCache.has(id)).sort(function (a, b) {
+      return (state.members[a].joinedAt || 0) - (state.members[b].joinedAt || 0);
+    });
+    const pool = AVATAR_KEYS.filter(k => !used.has(k));
+    rest.forEach(function (id) {
+      const key = pool.length ? pool.shift() : pickAvatar(state.members[id].name, id);
+      avatarCache.set(id, key);
+    });
+  }
+
   function avatarKey(m, id) {
     if (m && AVATARS[m.avatar]) return m.avatar;
+    if (id && avatarCache.has(id)) return avatarCache.get(id);
     return pickAvatar(m && m.name, id);
   }
   function avatarSrc(m, id) { return AVATARS[avatarKey(m, id)].src; }
@@ -487,9 +520,9 @@
       const toMe = !!(mine && m.text.indexOf('@' + mine.name) >= 0);
       const textHtml = escapeHtml(m.text).replace(/(@[가-힣A-Za-z0-9_]+)/g, '<span class="mention">$1</span>');
       const writer = m.who && state.members[m.who] ? state.members[m.who] : null;
-      const av = writer
-        ? avatarHtml(writer, m.who)
-        : faceHtml(pickAvatar(m.name, m.who));
+      const av = (m.avatar && AVATARS[m.avatar])
+        ? faceHtml(m.avatar)
+        : (writer ? avatarHtml(writer, m.who) : faceHtml(pickAvatar(m.name, m.who)));
       return sep
         + '<div class="msg' + (isMine ? ' mine' : '') + (toMe ? ' to-me' : '') + '">'
         + av
@@ -879,6 +912,7 @@
 
   /* ───────── 전체 다시 그리기 ───────── */
   function renderAll() {
+    rebuildAvatars();
     renderPeople();
     renderChars();
     renderChat();

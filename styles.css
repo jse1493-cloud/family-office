@@ -228,9 +228,9 @@ button { font: inherit; color: inherit; }
 .z-meeting{ left: 42%; top: 17%; width: 29%; height: 39%; }
 .z-lounge{ left: 59%; top: 41%; width: 35%; height: 42%; }
 
-.z-office .zone-label{ left: 51%; top: 91%; }
-.z-meeting .zone-label{ left: 47%; top: 99%; }
-.z-lounge .zone-label{ left: 57%; top: 88%; }
+.z-office .zone-label{ left: 27.8%; top: 84.6%; }
+.z-meeting .zone-label{ left: 46.6%; top: 93.6%; }
+.z-lounge .zone-label{ left: 57.1%; top: 88.1%; }
 
 /* 비서들 */
 .actors{
