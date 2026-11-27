@@ -993,11 +993,9 @@
     let base = id && state.members[id] ? state.members[id] : null;
 
     if (!id) {
-      /* 미리 만들어 둔 주인 없는 자리(예: 디노)가 있으면 그 자리로 들어가요 */
-      const found = Object.keys(state.members).find(k => {
-        const m = state.members[k];
-        return m && !m.claimed && m.name === name;
-      });
+      /* 같은 이름의 자리가 이미 있으면 그 자리로 들어가요 (예: 먼저 만들어 둔 '디노') */
+      const same = Object.keys(state.members).filter(k => state.members[k] && state.members[k].name === name);
+      const found = same.find(k => !state.members[k].claimed) || (same.length === 1 ? same[0] : null);
       if (found) { id = found; base = state.members[found]; }
       else id = 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
     } else if (!base) {
