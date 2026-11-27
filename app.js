@@ -18,7 +18,7 @@
   const ROOM_SLOTS = {
     office:  [[100, 245], [175, 245], [250, 245], [100, 292], [175, 292], [250, 292]],
     meeting: [[350, 158], [480, 158], [345, 100], [485, 100], [415, 174]],
-    lounge:  [[350, 345], [415, 345], [480, 345], [350, 318], [480, 318]]
+    lounge:  [[345, 345], [410, 345], [475, 345], [345, 300], [345, 255]]
   };
 
   const COLORS = {
@@ -302,16 +302,18 @@
       }));
     });
   }
-  function label(parent, text, x, y, z, tone) {
+  function label(parent, text, x, y, z, tone, lift) {
     const p = iso(x, y, z || 0);
+    const up = lift == null ? 34 : lift;
     const w = text.length * 16.5 + 26;
     const g = mk('g', {});
+    g.appendChild(mk('circle', { cx: p[0] + 5, cy: p[1] - 5, r: 3, fill: 'rgba(255,255,255,.85)' }));
     g.appendChild(mk('rect', {
-      x: p[0], y: p[1] - 13, width: w, height: 26, rx: 13,
-      fill: 'rgba(255,255,255,.9)', stroke: 'rgba(255,255,255,.9)', 'stroke-width': 1
+      x: p[0], y: p[1] - 13 - up, width: w, height: 26, rx: 13,
+      fill: 'rgba(255,255,255,.92)', stroke: 'rgba(255,255,255,.95)', 'stroke-width': 1
     }));
     g.appendChild(mk('text', {
-      x: p[0] + 13, y: p[1] + 1, 'font-size': 13.5, 'font-weight': 700,
+      x: p[0] + 13, y: p[1] + 1 - up, 'font-size': 13.5, 'font-weight': 700,
       fill: tone || '#57468f', 'dominant-baseline': 'middle'
     })).textContent = text;
     parent.appendChild(g);
@@ -363,11 +365,11 @@
 
     /* 오른쪽 벽 표찰 */
     const sign = mk('g', { transform: 'matrix(0.86 0.43 0 0.86 430 248)' });
-    sign.appendChild(mk('rect', { x: 148, y: -126, width: 190, height: 74, rx: 16, fill: '#fff8ef', stroke: '#ecd9bf', 'stroke-width': 2 }));
-    const t1 = mk('text', { x: 243, y: -94, 'text-anchor': 'middle', 'font-size': 21, 'font-weight': 800, fill: '#6b5c4a' });
+    sign.appendChild(mk('rect', { x: 168, y: -124, width: 150, height: 62, rx: 14, fill: '#fff8ef', stroke: '#ecd9bf', 'stroke-width': 2 }));
+    const t1 = mk('text', { x: 243, y: -97, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 800, fill: '#6b5c4a' });
     t1.textContent = '우리가족 오피스';
     sign.appendChild(t1);
-    const t2 = mk('text', { x: 243, y: -70, 'text-anchor': 'middle', 'font-size': 11, 'font-weight': 600, fill: '#a89479' });
+    const t2 = mk('text', { x: 243, y: -77, 'text-anchor': 'middle', 'font-size': 10, 'font-weight': 600, fill: '#a89479' });
     t2.textContent = '함께 쓰는 사무실';
     sign.appendChild(t2);
     walls.appendChild(sign);
@@ -414,8 +416,10 @@
     disc(furn, 415, 62, 15, 20, 20, '#ffd9c8', '#eab9a4');
     disc(furn, 462, 150, 15, 20, 20, '#ffd9c8', '#eab9a4');
     /* 휴게실 — 소파 */
-    box(furn, 348, 258, 470, 306, 0, 34, '#ffd9bd', '#e8ab86', '#f6c3a2');
-    box(furn, 348, 238, 470, 260, 0, 72, '#ffcdaf', '#e3a37d', '#f7bfa0');
+    box(furn, 380, 258, 500, 306, 0, 34, '#ffd9bd', '#e8ab86', '#f6c3a2');
+    box(furn, 380, 238, 500, 260, 0, 72, '#ffcdaf', '#e3a37d', '#f7bfa0');
+    box(furn, 390, 264, 438, 302, 34, 44, '#ffe6d5', '#efb897', '#fbd0b6');
+    box(furn, 444, 264, 492, 302, 34, 44, '#ffe6d5', '#efb897', '#fbd0b6');
     /* 화분 */
     plant(furn, 46, 352, 1.05);
     plant(furn, 524, 20, 0.95);
