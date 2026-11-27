@@ -1,5 +1,6 @@
 /* 우리가족 오피스 — app.js
-   가족 비서들이 함께 쓰는 작은 사무실. 어려운 말 없이, 누르면 바로 되는 화면. */
+   3D 클레이 오피스 그림 위에 가족 비서들이 서 있어요.
+   방을 누르면 내 비서가 그 방으로 걸어가고, 비서를 누르면 지금 상태가 보여요. */
 (function () {
   'use strict';
 
@@ -7,19 +8,45 @@
   const DB_URL = 'https://pickle-office-609b8-default-rtdb.firebaseio.com';
   const ME_KEY = 'woori-office-me';
   const TAB_KEY = 'woori-office-tab';
+  const SCENE_AR = 1536 / 1024;
 
   const ROOMS = {
-    office:  { name: '열린 사무실', x0: 30,  y0: 40,  x1: 300, y1: 300 },
-    meeting: { name: '회의실',      x0: 320, y0: 40,  x1: 510, y1: 180 },
-    lounge:  { name: '휴게실',      x0: 320, y0: 200, x1: 510, y1: 360 }
+    office:  { name: '열린 사무실' },
+    meeting: { name: '회의실' },
+    lounge:  { name: '휴게실' }
   };
   const ROOM_KEYS = Object.keys(ROOMS);
 
+  /* 방 안에서 서는 자리 — 그림 위 좌표(%), 그림 높이에 대한 키 비율(h) */
   const ROOM_SLOTS = {
-    office:  [[100, 245], [175, 245], [250, 245], [100, 292], [175, 292], [250, 292]],
-    meeting: [[350, 158], [480, 158], [345, 100], [485, 100], [415, 174]],
-    lounge:  [[345, 345], [410, 345], [475, 345], [345, 300], [475, 300]]
+    office: [
+      { x: 40.6, y: 64.0, h: 0.255 },
+      { x: 45.2, y: 55.5, h: 0.235 },
+      { x: 36.4, y: 71.0, h: 0.265 },
+      { x: 47.4, y: 68.2, h: 0.258 }
+    ],
+    meeting: [
+      { x: 51.4, y: 48.5, h: 0.212 },
+      { x: 58.4, y: 50.2, h: 0.222 },
+      { x: 62.6, y: 45.0, h: 0.208 },
+      { x: 48.6, y: 33.5, h: 0.198 }
+    ],
+    lounge: [
+      { x: 72.6, y: 71.0, h: 0.262 },
+      { x: 66.0, y: 65.5, h: 0.248 },
+      { x: 81.6, y: 67.0, h: 0.258 },
+      { x: 86.2, y: 77.0, h: 0.262 }
+    ]
   };
+
+  /* 비서 얼굴(3D 클레이) */
+  const AVATARS = {
+    dino:   { src: 'assets/char-dino.png',   scale: 0.84, label: '동글 로봇' },
+    mom:    { src: 'assets/char-mom.png',    scale: 1,    label: '다정한 어른' },
+    guest1: { src: 'assets/char-guest1.png', scale: 1,    label: '분홍 머리' },
+    guest2: { src: 'assets/char-guest2.png', scale: 1,    label: '파란 후드' }
+  };
+  const AVATAR_KEYS = Object.keys(AVATARS);
 
   const COLORS = {
     beige:  { name: '베이지', base: '#f0d7b4', light: '#fff3de', dark: '#cfae86', ink: '#7a5a35' },
@@ -32,7 +59,6 @@
     lilac:  { name: '라일락', base: '#e3d4f7', light: '#f7f0ff', dark: '#c0a9e0', ink: '#5f4a80' }
   };
   const COLOR_KEYS = Object.keys(COLORS);
-  const GLYPHS = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
 
   /* ───────── 가족 입장 암호 ─────────
      암호를 바꾸려면 브라우저 개발자 도구 콘솔에서 아래 한 줄을 실행해 나온 값을 LOCK.hash 에 넣으면 돼요.
@@ -81,12 +107,30 @@
     if (diff === 1) return '어제';
     return (d.getMonth() + 1) + '월 ' + d.getDate() + '일';
   }
-  function avatarHtml(glyph, colorKey, extraClass) {
-    const c = color(colorKey);
-    const g = escapeHtml(glyph || '?');
-    return '<span class="avatar ' + (extraClass || '') + '" style="background:radial-gradient(circle at 34% 26%,' +
-      c.light + ' 0%,' + c.base + ' 56%,' + c.dark + ' 100%);color:' + c.ink + '">' + g + '</span>';
+
+  /* ───────── 비서 얼굴 고르기 ───────── */
+  function pickAvatar(name, id) {
+    const s = String(name == null ? '' : name) + '|' + String(id == null ? '' : id);
+    if (/디노|dino/i.test(s)) return 'dino';
+    if (/엄마|어머니|맘|mom/i.test(s)) return 'mom';
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 9973;
+    return AVATAR_KEYS[h % AVATAR_KEYS.length];
   }
+  function avatarKey(m, id) {
+    if (m && AVATARS[m.avatar]) return m.avatar;
+    return pickAvatar(m && m.name, id);
+  }
+  function avatarSrc(m, id) { return AVATARS[avatarKey(m, id)].src; }
+  function avatarHtml(m, id, extraClass) {
+    return '<span class="avatar ' + (extraClass || '') + '"><img src="' + avatarSrc(m, id) +
+      '" alt="" aria-hidden="true" loading="lazy"></span>';
+  }
+  function faceHtml(key, extraClass) {
+    return '<span class="avatar ' + (extraClass || '') + '"><img src="' + AVATARS[key].src +
+      '" alt="" aria-hidden="true"></span>';
+  }
+
   async function sha256Hex(text) {
     if (window.crypto && window.crypto.subtle && window.TextEncoder) {
       const buf = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
@@ -201,297 +245,48 @@
 
   const me = () => (state.meId ? state.members[state.meId] : null);
 
-  /* ───────── 그림 그리기 도구 ───────── */
-  const SVGNS = 'http://www.w3.org/2000/svg';
-  const svg = $('#office');
-  const ISO = { cx: 430, cy: 248, c: 0.86 };
-  const iso = (x, y, z) => [
-    ISO.cx + (x - y) * ISO.c,
-    ISO.cy + (x + y) * ISO.c * 0.5 - (z || 0) * ISO.c
-  ];
-  function mk(tag, attrs) {
-    const e = document.createElementNS(SVGNS, tag);
-    if (attrs) for (const k in attrs) if (attrs[k] !== undefined && attrs[k] !== null) e.setAttribute(k, attrs[k]);
-    return e;
-  }
-  function poly(pts, attrs) {
-    return mk('polygon', Object.assign({ points: pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ') }, attrs || {}));
-  }
-  function roundedPoly(pts, r) {
-    const n = pts.length;
-    let d = '';
-    for (let i = 0; i < n; i++) {
-      const p = pts[i], a = pts[(i - 1 + n) % n], b = pts[(i + 1) % n];
-      const la = Math.hypot(a[0] - p[0], a[1] - p[1]) || 1;
-      const lb = Math.hypot(b[0] - p[0], b[1] - p[1]) || 1;
-      const rr = Math.min(r, la / 2, lb / 2);
-      const p1 = [p[0] + (a[0] - p[0]) / la * rr, p[1] + (a[1] - p[1]) / la * rr];
-      const p2 = [p[0] + (b[0] - p[0]) / lb * rr, p[1] + (b[1] - p[1]) / lb * rr];
-      d += (i === 0 ? 'M' : 'L') + p1[0].toFixed(1) + ' ' + p1[1].toFixed(1);
-      d += 'Q' + p[0].toFixed(1) + ' ' + p[1].toFixed(1) + ' ' + p2[0].toFixed(1) + ' ' + p2[1].toFixed(1);
-    }
-    return d + 'Z';
-  }
-  function rectPts(x0, y0, x1, y1) {
-    return [iso(x0, y0), iso(x1, y0), iso(x1, y1), iso(x0, y1)];
-  }
-  /* 두께가 있는 바닥판 */
-  function slab(parent, x0, y0, x1, y1, h, fill, opt) {
-    opt = opt || {};
-    const r = opt.r == null ? 18 : opt.r;
-    const pts = rectPts(x0, y0, x1, y1);
-    const shadowPts = pts.map(p => [p[0] + 4, p[1] + h + 15]);
-    parent.appendChild(mk('path', {
-      d: roundedPoly(shadowPts, r), fill: opt.shadow || 'rgba(126,98,72,.20)', filter: 'url(#soft)'
-    }));
-    const sidePts = pts.map(p => [p[0], p[1] + h]);
-    parent.appendChild(mk('path', { d: roundedPoly(sidePts, r), fill: opt.side || '#e6d3bd' }));
-    const top = mk('path', {
-      d: roundedPoly(pts, r), fill: fill,
-      stroke: opt.stroke || 'rgba(255,255,255,.55)', 'stroke-width': opt.strokeWidth || 1.6
-    });
-    if (opt.faceClass) top.setAttribute('class', opt.faceClass);
-    parent.appendChild(top);
-    return top;
-  }
-  /* 네모 상자 */
-  function box(parent, x0, y0, x1, y1, z0, z1, top, right, front) {
-    parent.appendChild(poly([iso(x1, y0, z0), iso(x1, y1, z0), iso(x1, y1, z1), iso(x1, y0, z1)], { fill: right }));
-    parent.appendChild(poly([iso(x0, y1, z0), iso(x1, y1, z0), iso(x1, y1, z1), iso(x0, y1, z1)], { fill: front }));
-    parent.appendChild(poly([iso(x0, y0, z1), iso(x1, y0, z1), iso(x1, y1, z1), iso(x0, y1, z1)], {
-      fill: top, stroke: 'rgba(255,255,255,.45)', 'stroke-width': 1
-    }));
-  }
-  /* 둥근 상판 (원형 테이블) */
-  function disc(parent, cx, cy, r, z, h, top, side) {
-    const p = iso(cx, cy, 0);
-    parent.appendChild(mk('ellipse', {
-      cx: p[0] + 4, cy: p[1] + 8, rx: r * ISO.c * 1.32, ry: r * ISO.c * 0.66,
-      fill: 'rgba(126,98,72,.10)', filter: 'url(#soft)'
-    }));
-    const topP = iso(cx, cy, z);
-    parent.appendChild(mk('ellipse', {
-      cx: topP[0], cy: topP[1] + h, rx: r * ISO.c * 1.38, ry: r * ISO.c * 0.72, fill: side
-    }));
-    parent.appendChild(mk('ellipse', {
-      cx: topP[0], cy: topP[1], rx: r * ISO.c * 1.38, ry: r * ISO.c * 0.72,
-      fill: top, stroke: 'rgba(255,255,255,.5)', 'stroke-width': 1.4
-    }));
-  }
-  function plant(parent, x, y, s) {
-    s = s || 1;
-    const base = iso(x, y, 0);
-    parent.appendChild(mk('ellipse', {
-      cx: base[0] + 2, cy: base[1] + 6, rx: 22 * s, ry: 9 * s, fill: 'rgba(126,98,72,.16)', filter: 'url(#soft2)'
-    }));
-    /* 화분 */
-    parent.appendChild(mk('path', {
-      d: 'M' + (base[0] - 14 * s) + ' ' + (base[1] - 18 * s) +
-        ' L' + (base[0] + 14 * s) + ' ' + (base[1] - 18 * s) +
-        ' L' + (base[0] + 10 * s) + ' ' + (base[1]) +
-        ' Q' + base[0] + ' ' + (base[1] + 7 * s) + ' ' + (base[0] - 10 * s) + ' ' + base[1] + ' Z',
-      fill: 'url(#pot)'
-    }));
-    const leaves = [[-12, -40, 15], [10, -44, 14], [0, -56, 16], [-20, -52, 11], [20, -58, 11]];
-    leaves.forEach(function (l, i) {
-      parent.appendChild(mk('ellipse', {
-        cx: base[0] + l[0] * s, cy: base[1] + l[1] * s,
-        rx: l[2] * s * 0.62, ry: l[2] * s,
-        fill: i % 2 ? 'url(#leaf)' : '#8bcfae',
-        stroke: 'rgba(255,255,255,.35)', 'stroke-width': 1
-      }));
-    });
-  }
-  function label(parent, text, x, y, z, tone, lift) {
-    const p = iso(x, y, z || 0);
-    const up = lift == null ? 34 : lift;
-    const w = text.length * 16.5 + 26;
-    const g = mk('g', {});
-    g.appendChild(mk('circle', { cx: p[0] + 5, cy: p[1] - 5, r: 3, fill: 'rgba(255,255,255,.85)' }));
-    g.appendChild(mk('rect', {
-      x: p[0], y: p[1] - 13 - up, width: w, height: 26, rx: 13,
-      fill: 'rgba(255,255,255,.92)', stroke: 'rgba(255,255,255,.95)', 'stroke-width': 1
-    }));
-    g.appendChild(mk('text', {
-      x: p[0] + 13, y: p[1] + 1 - up, 'font-size': 13.5, 'font-weight': 700,
-      fill: tone || '#57468f', 'dominant-baseline': 'middle'
-    })).textContent = text;
-    parent.appendChild(g);
-    return g;
+  /* ───────── 오피스 무대 ───────── */
+  const stage = {
+    scene: $('#scene'),
+    actors: $('#actors'),
+    els: new Map(),
+    ready: false
+  };
+
+  function fitScene() {
+    if (!stage.scene) return;
+    const wrap = $('#sceneWrap');
+    const r = wrap.getBoundingClientRect();
+    const cs = getComputedStyle(wrap);
+    const availW = Math.max(0, r.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight));
+    const availH = Math.max(0, r.height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom));
+    if (!availW) return;
+    let w = availW;
+    let h = w / SCENE_AR;
+    if (availH && h > availH) { h = availH; w = h * SCENE_AR; }
+    stage.scene.style.width = Math.round(w) + 'px';
+    stage.scene.style.height = Math.round(h) + 'px';
+    stage.ready = true;
+    renderChars();
+    closeCard();
   }
 
-  const layers = {};
-
-  function buildScene() {
-    svg.textContent = '';
-
-    const defs = mk('defs');
-    let d = ''
-      + '<filter id="soft" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="13"/></filter>'
-      + '<filter id="soft2" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="4"/></filter>'
-      + '<linearGradient id="floorTop" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#fdf4e8"/><stop offset="1" stop-color="#f0dfcb"/></linearGradient>'
-      + '<linearGradient id="wallR" x1="0" y1="0" x2="0.15" y2="1"><stop offset="0" stop-color="#fffcf7"/><stop offset="1" stop-color="#f4e6d7"/></linearGradient>'
-      + '<linearGradient id="wallL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdf7f0"/><stop offset="1" stop-color="#ecdbc8"/></linearGradient>'
-      + '<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c8e4ff"/><stop offset="1" stop-color="#eef8ff"/></linearGradient>'
-      + '<linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b3e2c9"/><stop offset="1" stop-color="#63b48f"/></linearGradient>'
-      + '<linearGradient id="pot" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffdcc6"/><stop offset="1" stop-color="#e9b597"/></linearGradient>';
-    COLOR_KEYS.forEach(function (k) {
-      const c = COLORS[k];
-      d += '<radialGradient id="g-' + k + '" cx="34%" cy="26%" r="82%">'
-        + '<stop offset="0" stop-color="' + c.light + '"/><stop offset="52%" stop-color="' + c.base + '"/>'
-        + '<stop offset="100%" stop-color="' + c.dark + '"/></radialGradient>';
-    });
-    defs.innerHTML = d;
-    svg.appendChild(defs);
-
-    /* 벽 */
-    const H = 152;
-    const walls = mk('g');
-    walls.appendChild(poly([iso(0, 0, H), iso(540, 0, H), iso(540, 0, 0), iso(0, 0, 0)], { fill: 'url(#wallR)' }));
-    walls.appendChild(poly([iso(0, 0, H), iso(0, 400, H), iso(0, 400, 0), iso(0, 0, 0)], { fill: 'url(#wallL)' }));
-    /* 벽 하단 걸레받이 */
-    walls.appendChild(poly([iso(0, 0, 12), iso(540, 0, 12), iso(540, 0, 0), iso(0, 0, 0)], { fill: 'rgba(255,255,255,.55)' }));
-    walls.appendChild(poly([iso(0, 0, 12), iso(0, 400, 12), iso(0, 400, 0), iso(0, 0, 0)], { fill: 'rgba(255,255,255,.4)' }));
-
-    /* 왼쪽 벽 동그란 창 */
-    const win = mk('g', { transform: 'matrix(-0.86 0.43 0 0.86 430 248)' });
-    win.appendChild(mk('circle', { cx: 205, cy: -82, r: 47, fill: 'url(#sky)' }));
-    win.appendChild(mk('ellipse', { cx: 190, cy: -66, rx: 17, ry: 9, fill: 'rgba(255,255,255,.85)' }));
-    win.appendChild(mk('ellipse', { cx: 224, cy: -88, rx: 12, ry: 7, fill: 'rgba(255,255,255,.7)' }));
-    win.appendChild(mk('ellipse', { cx: 208, cy: -112, rx: 26, ry: 8, fill: 'rgba(150,205,150,.55)' }));
-    win.appendChild(mk('circle', { cx: 205, cy: -82, r: 47, fill: 'none', stroke: '#fff', 'stroke-width': 7 }));
-    win.appendChild(mk('circle', { cx: 205, cy: -82, r: 51, fill: 'none', stroke: 'rgba(220,198,172,.7)', 'stroke-width': 2 }));
-    walls.appendChild(win);
-
-    /* 왼쪽 벽 시계 */
-    const clock = mk('g', { transform: 'matrix(-0.86 0.43 0 0.86 430 248)' });
-    clock.appendChild(mk('circle', { cx: 92, cy: -74, r: 24, fill: '#fffaf3', stroke: '#e8d6c2', 'stroke-width': 3 }));
-    clock.appendChild(mk('circle', { cx: 92, cy: -74, r: 2.5, fill: '#c1ab92' }));
-    clock.appendChild(mk('line', { x1: 92, y1: -74, x2: 92, y2: -88, stroke: '#b9a48c', 'stroke-width': 2.4, 'stroke-linecap': 'round' }));
-    clock.appendChild(mk('line', { x1: 92, y1: -74, x2: 101, y2: -70, stroke: '#b9a48c', 'stroke-width': 2.4, 'stroke-linecap': 'round' }));
-    walls.appendChild(clock);
-
-    /* 왼쪽 벽 작은 액자 */
-    const frame = mk('g', { transform: 'matrix(-0.86 0.43 0 0.86 430 248)' });
-    frame.appendChild(mk('rect', { x: 250, y: -108, width: 58, height: 46, rx: 8, fill: '#f6eeee', stroke: '#e8d6c2', 'stroke-width': 2.5 }));
-    frame.appendChild(mk('path', { d: 'M256 -76 L272 -94 L282 -84 L292 -98 L302 -76 Z', fill: '#b6dcca' }));
-    walls.appendChild(frame);
-
-    /* 오른쪽 벽 표찰 */
-    const sign = mk('g', { transform: 'matrix(0.86 0.43 0 0.86 430 248)' });
-    sign.appendChild(mk('rect', { x: 168, y: -124, width: 150, height: 62, rx: 14, fill: '#fff8ef', stroke: '#ecd9bf', 'stroke-width': 2 }));
-    const t1 = mk('text', { x: 243, y: -97, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 800, fill: '#6b5c4a' });
-    t1.textContent = '우리가족 오피스';
-    sign.appendChild(t1);
-    const t2 = mk('text', { x: 243, y: -77, 'text-anchor': 'middle', 'font-size': 10, 'font-weight': 600, fill: '#a89479' });
-    t2.textContent = '함께 쓰는 사무실';
-    sign.appendChild(t2);
-    walls.appendChild(sign);
-    svg.appendChild(walls);
-
-    /* 바닥 */
-    const floor = mk('g');
-    slab(floor, -12, -12, 552, 412, 18, 'url(#floorTop)', { r: 30, side: '#e0cbb3', shadow: 'rgba(120,92,66,.24)' });
-    svg.appendChild(floor);
-
-    /* 방(구역) */
-    layers.rugs = mk('g');
-    svg.appendChild(layers.rugs);
-    layers.rugFaces = {};
-    layers.labels = mk('g');
-    ROOM_KEYS.forEach(function (key) {
-      const r = ROOMS[key];
-      const tone = key === 'office'
-        ? { top: '#dcefe2', side: '#c3e2d2', ink: '#2f6b53' }
-        : key === 'meeting'
-          ? { top: '#ffe4cc', side: '#f2cbaa', ink: '#8a5432' }
-          : { top: '#e4ddff', side: '#cdc2f5', ink: '#57468f' };
-      const g = mk('g', { class: 'room', 'data-room': key, tabindex: '0', role: 'button', 'aria-label': r.name + ' — 눌러서 내 비서를 옮겨요' });
-      const face = slab(g, r.x0, r.y0, r.x1, r.y1, 6, tone.top, {
-        r: 22, side: tone.side, shadow: 'rgba(126,98,72,.16)', faceClass: 'rug-face'
-      });
-      layers.rugFaces[key] = face;
-      const lab = key === 'lounge'
-        ? label(layers.labels, r.name, r.x1 - 10, r.y1 - 8, 8, tone.ink, 30)
-        : label(layers.labels, r.name, r.x0 + 14, r.y0 + 12, 8, tone.ink);
-      lab.addEventListener('click', function () { moveMe(key); });
-      g.addEventListener('click', function () { moveMe(key); });
-      g.addEventListener('keydown', function (ev) {
-        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); moveMe(key); }
-      });
-      layers.rugs.appendChild(g);
-    });
-
-    /* 가구 */
-    const furn = mk('g');
-    /* 열린 사무실 — 책상과 의자 */
-    box(furn, 68, 58, 196, 126, 0, 42, '#fff8ee', '#d9bd9e', '#eed4b6');
-    box(furn, 104, 78, 148, 100, 42, 49, '#dfe4f1', '#b9c1d6', '#c9d0e2');
-    box(furn, 118, 146, 150, 176, 0, 26, '#e9d8f2', '#d0b9dd', '#dcc7e8');
-    /* 회의실 — 둥근 탁자 */
-    box(furn, 404, 99, 426, 121, 0, 44, '#f6e6d2', '#ddc3a4', '#ecd4b8');
-    disc(furn, 415, 110, 36, 44, 44, '#fffaf2', '#e3c6a4');
-    box(furn, 400, 42, 430, 66, 0, 24, '#ffd9c8', '#e8b39c', '#f6c6b2');
-    box(furn, 446, 140, 476, 164, 0, 24, '#ffd9c8', '#e8b39c', '#f6c6b2');
-    /* 휴게실 — 소파 */
-    box(furn, 380, 236, 500, 284, 0, 34, '#ffd9bd', '#e8ab86', '#f6c3a2');
-    box(furn, 380, 214, 500, 238, 0, 72, '#ffcdaf', '#e3a37d', '#f7bfa0');
-    box(furn, 390, 242, 438, 280, 34, 44, '#ffe6d5', '#efb897', '#fbd0b6');
-    box(furn, 444, 242, 492, 280, 34, 44, '#ffe6d5', '#efb897', '#fbd0b6');
-    /* 화분 */
-    plant(furn, 46, 352, 1.05);
-    plant(furn, 524, 20, 0.95);
-    plant(furn, 330, 384, 1);
-    svg.appendChild(furn);
-    svg.appendChild(layers.labels);
-
-    /* 캐릭터 자리 */
-    layers.chars = mk('g');
-    svg.appendChild(layers.chars);
-  }
-
-  /* ───────── 캐릭터 ───────── */
-  const chars = new Map();
-
-  function createChar(id) {
-    const g = mk('g', { class: 'char', 'data-id': id, tabindex: '0', role: 'button' });
-    const shadow = mk('ellipse', { cx: 0, cy: 3, rx: 29, ry: 11, fill: 'rgba(104,78,54,.22)', filter: 'url(#soft2)' });
-    const ring = mk('ellipse', { cx: 0, cy: 0, rx: 33, ry: 13, fill: 'none', stroke: '#7c6cf6', 'stroke-width': 3, 'stroke-dasharray': '5 6', opacity: 0 });
-    const body = mk('circle', { cx: 0, cy: -34, r: 27, fill: 'url(#g-beige)', stroke: '#fff', 'stroke-width': 3.5, class: 'char-body' });
-    const shine = mk('ellipse', { cx: -9, cy: -47, rx: 8.5, ry: 5.5, fill: 'rgba(255,255,255,.6)' });
-    const glyph = mk('text', { x: 0, y: -33, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': 26, 'font-weight': 800, fill: '#7a5a35' });
-    const pill = mk('rect', { x: -34, y: -102, width: 68, height: 26, rx: 13, fill: 'rgba(255,255,255,.94)', stroke: 'rgba(255,255,255,.94)' });
-    const pillTxt = mk('text', { x: 0, y: -88.5, 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-size': 13, 'font-weight': 700, fill: '#4a4058' });
-    g.appendChild(shadow);
-    g.appendChild(ring);
-    g.appendChild(body);
-    g.appendChild(shine);
-    g.appendChild(glyph);
-    g.appendChild(pill);
-    g.appendChild(pillTxt);
-    g.addEventListener('click', function (ev) { ev.stopPropagation(); openCharCard(id); });
-    g.addEventListener('keydown', function (ev) {
-      if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openCharCard(id); }
-    });
-    return { g: g, body: body, glyph: glyph, pill: pill, pillTxt: pillTxt, ring: ring, x: 0, y: 0, tx: 0, ty: 0, ready: false };
-  }
-
-  function updateChar(ch, m, isMe) {
-    const c = color(m.color);
-    ch.body.setAttribute('fill', 'url(#g-' + (COLORS[m.color] ? m.color : 'beige') + ')');
-    ch.glyph.setAttribute('fill', c.ink);
-    ch.glyph.textContent = m.glyph || '·';
-    const name = (m.name || '이름 없음') + (isMe ? ' (나)' : '');
-    ch.pillTxt.textContent = name;
-    const w = Math.max(56, name.length * 13 + 24);
-    ch.pill.setAttribute('x', -w / 2);
-    ch.pill.setAttribute('width', w);
-    ch.ring.setAttribute('opacity', isMe ? 0.95 : 0);
-    ch.g.classList.toggle('is-me', !!isMe);
+  function actorEl(id) {
+    let el = stage.els.get(id);
+    if (el) return el;
+    el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'actor';
+    el.innerHTML = '<span class="actor-shadow"></span><img alt=""><span class="actor-tag"></span>';
+    el.addEventListener('click', function (ev) { ev.stopPropagation(); openCharCard(id); });
+    stage.actors.appendChild(el);
+    stage.els.set(id, el);
+    return el;
   }
 
   function renderChars() {
-    if (!layers.chars) return;
+    if (!stage.ready) return;
+    const sceneH = stage.scene.clientHeight || 1;
     const byRoom = {};
     ROOM_KEYS.forEach(k => { byRoom[k] = []; });
     Object.keys(state.members).forEach(function (id) {
@@ -503,7 +298,7 @@
 
     Object.keys(byRoom).forEach(function (roomKey) {
       const slots = ROOM_SLOTS[roomKey];
-      const list = byRoom[roomKey].sort((a, b) => {
+      const list = byRoom[roomKey].sort(function (a, b) {
         if (a[0] === state.meId) return -1;
         if (b[0] === state.meId) return 1;
         return String(a[1].name).localeCompare(String(b[1].name), 'ko');
@@ -512,41 +307,53 @@
         const id = pair[0], m = pair[1];
         const slot = slots[i % slots.length];
         const lap = Math.floor(i / slots.length);
-        const tx = slot[0] + lap * 12;
-        const ty = slot[1] + lap * 10;
+        const x = slot.x + lap * 2.4;
+        const y = slot.y + lap * 1.6;
 
-        let ch = chars.get(id);
-        if (!ch) {
-          ch = createChar(id);
-          ch.x = tx; ch.y = ty;
-          layers.chars.appendChild(ch.g);
-          chars.set(id, ch);
-        }
-        ch.tx = tx; ch.ty = ty;
-        updateChar(ch, m, id === state.meId);
+        const el = actorEl(id);
+        const key = avatarKey(m, id);
+        const av = AVATARS[key];
+        const hpx = Math.round(sceneH * slot.h * av.scale);
+
+        el.style.left = x.toFixed(2) + '%';
+        el.style.top = y.toFixed(2) + '%';
+        el.style.zIndex = String(Math.round(y * 10));
+        el.style.setProperty('--h', hpx + 'px');
+
+        const img = el.querySelector('img');
+        const src = av.src;
+        if (img.getAttribute('src') !== src) img.setAttribute('src', src);
+        img.alt = m.name;
+
+        const isMe = id === state.meId;
+        el.classList.toggle('is-me', isMe);
+        const tag = el.querySelector('.actor-tag');
+        tag.innerHTML = escapeHtml(m.name) + (isMe ? '<i>나</i>' : '');
+        el.setAttribute('aria-label', m.name + ' — 지금 상태 보기');
+        el.dataset.room = roomKey;
       });
     });
 
-    chars.forEach(function (ch, id) {
+    stage.els.forEach(function (el, id) {
       if (!state.members[id]) {
-        ch.g.remove();
-        chars.delete(id);
+        el.remove();
+        stage.els.delete(id);
       }
     });
   }
 
-  function tick() {
-    chars.forEach(function (ch) {
-      if (!ch.ready) { ch.x = ch.tx; ch.y = ch.ty; ch.ready = true; }
-      ch.x += (ch.tx - ch.x) * 0.16;
-      ch.y += (ch.ty - ch.y) * 0.16;
-      const p = iso(ch.x, ch.y, 0);
-      ch.g.setAttribute('transform', 'translate(' + p[0].toFixed(1) + ' ' + p[1].toFixed(1) + ')');
-    });
-    requestAnimationFrame(tick);
+  function animateWalk(id, fromRoom, toRoom) {
+    const el = stage.els.get(id);
+    if (!el || fromRoom === toRoom) return;
+    el.classList.add('walking');
+    setTimeout(function () { el.classList.remove('walking'); }, 1000);
+    setTimeout(function () {
+      el.classList.add('just-moved');
+      setTimeout(function () { el.classList.remove('just-moved'); }, 520);
+    }, 900);
   }
 
-  /* ───────── 캐릭터 상태 카드 ───────── */
+  /* ───────── 비서 상태 카드 ───────── */
   const card = $('#charCard');
   let cardId = null;
 
@@ -557,18 +364,18 @@
   }
 
   function openCharCard(id) {
-    const ch = chars.get(id);
+    const el = stage.els.get(id);
     const m = state.members[id];
-    if (!ch || !m) return;
+    if (!el || !m) return;
     cardId = id;
     const host = $('#mapCard').getBoundingClientRect();
-    const box = ch.g.getBoundingClientRect();
+    const box = el.getBoundingClientRect();
     const isMe = id === state.meId;
     const roomName = (ROOMS[m.room] || ROOMS.office).name;
 
     card.innerHTML = ''
       + '<div class="charcard-head">'
-      + avatarHtml(m.glyph, m.color)
+      + avatarHtml(m, id)
       + '<div class="who"><b>' + escapeHtml(m.name) + (isMe ? ' <span style="color:#7c6cf6;font-size:11px">나</span>' : '') + '</b>'
       + '<span>' + escapeHtml(roomName) + '에 있어요</span></div>'
       + '<button class="x" type="button" aria-label="닫기">✕</button>'
@@ -580,10 +387,17 @@
         : '');
 
     card.classList.remove('hidden');
-    const left = box.left - host.left + box.width / 2;
-    const top = box.top - host.top + 6;
-    card.style.left = Math.max(140, Math.min(host.width - 140, left)) + 'px';
-    card.style.top = Math.max(card.offsetHeight + 70, top) + 'px';
+
+    // 카드 폭을 먼저 알아야 자리를 잡을 수 있어요
+    const cw = card.offsetWidth;
+    const chh = card.offsetHeight;
+    const hostW = host.width;
+    let left = box.left - host.left + box.width / 2;
+    left = Math.max(cw / 2 + 10, Math.min(hostW - cw / 2 - 10, left));
+    let top = box.top - host.top - 8;
+    if (top - chh < 8) top = box.bottom - host.top + chh + 8;
+    card.style.left = left + 'px';
+    card.style.top = top + 'px';
 
     $('.x', card).addEventListener('click', closeCard);
     if (isMe) {
@@ -602,8 +416,12 @@
     const m = me();
     if (!m) { openProfile(true); return; }
     if (m.room === roomKey) { toast(ROOMS[roomKey].name + '에 이미 있어요'); return; }
+    const before = m.room;
     store.update('members/' + state.meId, { room: roomKey, movedAt: Date.now() })
-      .then(() => toast(withRo(ROOMS[roomKey].name) + ' 걸어갔어요'))
+      .then(() => {
+        animateWalk(state.meId, before, roomKey);
+        toast(withRo(ROOMS[roomKey].name) + ' 걸어갔어요');
+      })
       .catch(() => toast('잠시 후 다시 해 볼게요'));
   }
 
@@ -613,19 +431,16 @@
     const list = Object.keys(state.members).map(id => [id, state.members[id]]).filter(p => p[1] && p[1].name);
     list.sort((a, b) => (a[0] === state.meId ? -1 : b[0] === state.meId ? 1 : String(a[1].name).localeCompare(String(b[1].name), 'ko')));
     strip.innerHTML = list.slice(0, 6).map(p =>
-      '<span class="mini-avatar" title="' + escapeHtml(p[1].name) + '" style="background:radial-gradient(circle at 34% 26%,' +
-      color(p[1].color).light + ' 0%,' + color(p[1].color).base + ' 56%,' + color(p[1].color).dark + ' 100%);color:' + color(p[1].color).ink + '">'
-      + escapeHtml(p[1].glyph || '·') + '</span>'
+      '<span class="mini-avatar" title="' + escapeHtml(p[1].name) + '"><img src="' +
+      avatarSrc(p[1], p[0]) + '" alt=""></span>'
     ).join('') + (list.length ? '<span class="count">' + list.length + '명 함께</span>' : '');
 
     const myMini = $('#myMiniAvatar');
     const m = me();
     if (m) {
-      myMini.textContent = m.glyph || '·';
-      myMini.style.background = 'radial-gradient(circle at 34% 26%,' + color(m.color).light + ' 0%,' + color(m.color).base + ' 56%,' + color(m.color).dark + ' 100%)';
-      myMini.style.color = color(m.color).ink;
+      myMini.innerHTML = '<img src="' + avatarSrc(m, state.meId) + '" alt="">';
     } else {
-      myMini.textContent = '?';
+      myMini.innerHTML = '';
     }
   }
 
@@ -641,12 +456,9 @@
       b.textContent = ROOMS[key].name + (mine === key ? ' · 지금' : '');
       b.addEventListener('click', function () { moveMe(key); });
       host.appendChild(b);
-      const face = layers.rugFaces && layers.rugFaces[key];
-      if (face) {
-        face.setAttribute('stroke', mine === key ? 'rgba(124,108,246,.75)' : 'rgba(255,255,255,.55)');
-        face.setAttribute('stroke-width', mine === key ? 3 : 1.6);
-        face.setAttribute('stroke-dasharray', mine === key ? '10 7' : '');
-      }
+    });
+    $$('.zone').forEach(function (z) {
+      z.classList.toggle('on', mine === z.getAttribute('data-room'));
     });
   }
 
@@ -674,9 +486,13 @@
       const isMine = m.who && m.who === state.meId;
       const toMe = !!(mine && m.text.indexOf('@' + mine.name) >= 0);
       const textHtml = escapeHtml(m.text).replace(/(@[가-힣A-Za-z0-9_]+)/g, '<span class="mention">$1</span>');
+      const writer = m.who && state.members[m.who] ? state.members[m.who] : null;
+      const av = writer
+        ? avatarHtml(writer, m.who)
+        : faceHtml(pickAvatar(m.name, m.who));
       return sep
         + '<div class="msg' + (isMine ? ' mine' : '') + (toMe ? ' to-me' : '') + '">'
-        + avatarHtml(m.glyph, m.color)
+        + av
         + '<div class="msg-body">'
         + '<div class="msg-head"><b>' + escapeHtml(m.name || '이름 없음') + '</b>'
         + '<span class="time">' + clockText(m.ts) + '</span>'
@@ -726,7 +542,7 @@
     autoGrow(input);
     try {
       await store.push('messages', {
-        name: m.name, glyph: m.glyph || '·', color: m.color || 'beige',
+        name: m.name, glyph: m.glyph || '·', color: m.color || 'beige', avatar: avatarKey(m, state.meId),
         text: text.slice(0, 500), ts: Date.now(), who: state.meId
       });
       setTimeout(() => { messagesEl.scrollTop = messagesEl.scrollHeight; }, 120);
@@ -924,7 +740,7 @@
     layer.innerHTML = '';
   }
   layer.addEventListener('click', function (e) { if (e.target === layer) closeModal(); });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeModal(); closeCard(); } });
 
   function openModal(html) {
     layer.innerHTML = '<div class="modal">' + html + '</div>';
@@ -937,46 +753,48 @@
     if (isFirst === true) state.onboarded = true;
 
     const m = me() || {};
-    const sel = { glyph: m.glyph || 'ㅋ', color: m.color || 'beige' };
+    const sel = {
+      avatar: m.avatar && AVATARS[m.avatar] ? m.avatar : pickAvatar(m.name, state.meId),
+      color: m.color || 'beige'
+    };
 
     const modal = openModal(''
       + '<h3>' + (isFirst ? '처음 오셨네요!' : '내 프로필') + '</h3>'
       + '<p class="sub">' + (isFirst
-        ? '이름표를 만들어 드릴게요. 나중에 언제든 바꿀 수 있어요.'
-        : '이름표를 바꾸면 사무실 전체에 바로 보여요.') + '</p>'
+        ? '사무실에 세울 내 모습을 골라 주세요. 나중에 언제든 바꿀 수 있어요.'
+        : '얼굴과 이름표를 바꾸면 사무실에 바로 보여요.') + '</p>'
       + '<div class="field"><label for="pfName">비서 이름</label>'
       + '<input id="pfName" type="text" maxlength="12" placeholder="예: 디노, 어머니의 비서" value="' + escapeHtml(m.name || '') + '"></div>'
-      + '<div class="field"><label>자음 모양</label><div class="picker" id="pfGlyph"></div></div>'
-      + '<div class="field"><label>색깔</label><div class="picker" id="pfColor"></div></div>'
+      + '<div class="field"><label>내 모습</label><div class="picker" id="pfFace"></div></div>'
+      + '<div class="field"><label>이름표 색</label><div class="picker" id="pfColor"></div></div>'
       + '<div class="preview" id="pfPreview"></div>'
       + '<div class="modal-actions">'
       + (isFirst ? '' : '<button class="btn ghost" id="pfCancel" type="button">닫기</button>')
       + '<button class="btn primary" id="pfSave" type="button">' + (isFirst ? '들어가기' : '저장') + '</button>'
       + '</div>');
 
-    const glyphHost = $('#pfGlyph', modal);
+    const faceHost = $('#pfFace', modal);
     const colorHost = $('#pfColor', modal);
 
     function paint() {
-      glyphHost.innerHTML = GLYPHS.map(g =>
-        '<button class="glyph-btn' + (g === sel.glyph ? ' on' : '') + '" type="button" data-g="' + g + '">' + g + '</button>'
+      faceHost.innerHTML = AVATAR_KEYS.map(k =>
+        '<button class="face-btn' + (k === sel.avatar ? ' on' : '') + '" type="button" data-a="' + k + '" aria-label="' + AVATARS[k].label + '" title="' + AVATARS[k].label + '">'
+        + '<img src="' + AVATARS[k].src + '" alt=""></button>'
       ).join('');
       colorHost.innerHTML = COLOR_KEYS.map(k => {
         const c = COLORS[k];
         return '<button class="swatch' + (k === sel.color ? ' on' : '') + '" type="button" data-c="' + k + '" aria-label="' + c.name + '" title="' + c.name + '" '
           + 'style="background:radial-gradient(circle at 34% 26%,' + c.light + ' 0%,' + c.base + ' 56%,' + c.dark + ' 100%)"></button>';
       }).join('');
-      const c = color(sel.color);
-      $('#pfPreview', modal).innerHTML = avatarHtml(sel.glyph, sel.color)
+      $('#pfPreview', modal).innerHTML = faceHtml(sel.avatar)
         + '<div><b>' + escapeHtml($('#pfName', modal).value.trim() || '이름을 적어 주세요') + '</b>'
         + '<span>이 모습으로 사무실에 서 있어요</span></div>';
-      $('#pfPreview .avatar', modal).style.color = c.ink;
     }
 
-    glyphHost.addEventListener('click', function (e) {
-      const b = e.target.closest('[data-g]');
+    faceHost.addEventListener('click', function (e) {
+      const b = e.target.closest('[data-a]');
       if (!b) return;
-      sel.glyph = b.getAttribute('data-g');
+      sel.avatar = b.getAttribute('data-a');
       paint();
     });
     colorHost.addEventListener('click', function (e) {
@@ -997,7 +815,7 @@
       const btn = $('#pfSave', modal);
       btn.disabled = true;
       try {
-        await applyProfile(name, sel.glyph, sel.color);
+        await applyProfile(name, sel.avatar, sel.color);
         closeModal();
         toast(isFirst ? '환영해요, ' + name + '님!' : '이름표를 바꿨어요');
       } catch (e) {
@@ -1011,7 +829,7 @@
     setTimeout(() => { const n = $('#pfName', modal); if (!m.name) n.focus(); }, 60);
   }
 
-  async function applyProfile(name, glyph, colorKey) {
+  async function applyProfile(name, avatar, colorKey) {
     let id = state.meId;
     let base = id && state.members[id] ? state.members[id] : null;
 
@@ -1027,7 +845,7 @@
 
     const rec = {
       name: name,
-      glyph: glyph,
+      avatar: avatar,
       color: colorKey,
       room: base && ROOMS[base.room] ? base.room : 'office',
       status: (base && base.status) || '출근 완료 · 대기 중',
@@ -1086,10 +904,16 @@
     $('#btnInvite').addEventListener('click', openInvite);
     $('#copyInvite').addEventListener('click', copyInvite);
     $('#inviteCodeText').textContent = inviteText();
-    $('#mapCard').addEventListener('click', function (e) {
-      if (!e.target.closest('.charcard') && !e.target.closest('.char')) closeCard();
+    $$('.zone').forEach(function (z) {
+      z.addEventListener('click', function () { moveMe(z.getAttribute('data-room')); });
     });
-    window.addEventListener('resize', closeCard);
+    $('#mapCard').addEventListener('click', function (e) {
+      if (!e.target.closest('.charcard') && !e.target.closest('.actor')) closeCard();
+    });
+    window.addEventListener('resize', function () { fitScene(); });
+    if (window.ResizeObserver) {
+      new ResizeObserver(function () { fitScene(); }).observe($('#sceneWrap'));
+    }
   }
 
   /* ───────── 잠금 화면 ───────── */
@@ -1139,9 +963,9 @@
   }
 
   function init() {
-    buildScene();
     bind();
     switchTab(state.tab);
+    fitScene();
 
     store.listen('members', function (v) {
       state.members = v || {};
@@ -1166,7 +990,6 @@
     });
 
     renderAll();
-    requestAnimationFrame(tick);
     setTimeout(function () { if (!state.membersLoaded) $('#mapLoading').hidden = true; }, 6000);
   }
 

@@ -7,7 +7,7 @@
 <meta name="description" content="우리 가족의 비서들이 함께 쓰는 사무실이에요. 이야기를 나누고, 할 일을 나누고, 방을 옮겨 다닐 수 있어요.">
 <meta name="theme-color" content="#f7efe6">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="styles.css?v=12">
+<link rel="stylesheet" href="styles.css?v=13">
 </head>
 <body>
 
@@ -30,7 +30,7 @@
         <span>화면 잠그기</span>
       </button>
       <button class="btn ghost" id="btnProfile" type="button">
-        <span class="mini-avatar" id="myMiniAvatar">?</span>
+        <span class="mini-avatar" id="myMiniAvatar"></span>
         <span>내 프로필</span>
       </button>
       <button class="btn primary" id="btnInvite" type="button">
@@ -42,7 +42,24 @@
 
   <main class="stage">
     <section class="map-card" id="mapCard">
-      <svg id="office" viewBox="60 95 860 610" role="img" aria-label="우리 가족 사무실 그림이에요. 방을 누르면 내 비서가 그 방으로 걸어가요."></svg>
+      <div class="scene-wrap" id="sceneWrap">
+        <div class="scene" id="scene">
+          <img class="scene-bg" src="assets/office-bg.jpg" alt="우리 가족 3D 오피스 — 열린 사무실, 회의실, 휴게실">
+          <button class="zone z-office" type="button" data-room="office" aria-label="열린 사무실 — 눌러서 내 비서를 옮겨요">
+            <span class="zone-glow"></span>
+            <span class="zone-label">열린 사무실</span>
+          </button>
+          <button class="zone z-meeting" type="button" data-room="meeting" aria-label="회의실 — 눌러서 내 비서를 옮겨요">
+            <span class="zone-glow"></span>
+            <span class="zone-label">회의실</span>
+          </button>
+          <button class="zone z-lounge" type="button" data-room="lounge" aria-label="휴게실 — 눌러서 내 비서를 옮겨요">
+            <span class="zone-glow"></span>
+            <span class="zone-label">휴게실</span>
+          </button>
+          <div class="actors" id="actors" aria-live="polite"></div>
+        </div>
+      </div>
       <div class="map-footer">
         <p class="map-hint">방을 누르면 내 비서가 걸어가요 · 내 비서를 누르면 지금 상태가 보여요</p>
         <div class="room-chips" id="roomChips" role="group" aria-label="방 옮기기"></div>
@@ -62,7 +79,7 @@
       <section class="pane" id="pane-chat">
         <div class="pane-head">
           <div>
-            <h2>대화창</h2>
+            <h2>대화창 <span class="head-tag"># 우리 가족</span></h2>
             <p>이름 앞에 @를 붙이면 그 비서에게 말을 거는 거예요</p>
           </div>
         </div>
@@ -143,6 +160,6 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="app.js?v=12"></script>
+<script src="app.js?v=13"></script>
 </body>
 </html>
