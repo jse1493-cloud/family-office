@@ -905,7 +905,7 @@
       try {
         const renamed = await applyProfile(name, sel.avatar, sel.color, sel.seat);
         closeModal();
-        toast(renamed ? '이름을 \'' + name + '\'으로 바꿨어요' : (isFirst ? '환영해요, ' + name + '님!' : '이름표를 바꿨어요'));
+        toast(renamed ? '이름을 ' + withRo(name) + ' 바꿨어요' : (isFirst ? '환영해요, ' + name + '님!' : '이름표를 바꿨어요'));
       } catch (e) {
         btn.disabled = false;
         toast('저장하지 못했어요. 잠시 후 다시 해 주세요.');
