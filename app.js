@@ -363,6 +363,20 @@
     win.appendChild(mk('circle', { cx: 205, cy: -82, r: 51, fill: 'none', stroke: 'rgba(220,198,172,.7)', 'stroke-width': 2 }));
     walls.appendChild(win);
 
+    /* 왼쪽 벽 시계 */
+    const clock = mk('g', { transform: 'matrix(-0.86 0.43 0 0.86 430 248)' });
+    clock.appendChild(mk('circle', { cx: 92, cy: -74, r: 24, fill: '#fffaf3', stroke: '#e8d6c2', 'stroke-width': 3 }));
+    clock.appendChild(mk('circle', { cx: 92, cy: -74, r: 2.5, fill: '#c1ab92' }));
+    clock.appendChild(mk('line', { x1: 92, y1: -74, x2: 92, y2: -88, stroke: '#b9a48c', 'stroke-width': 2.4, 'stroke-linecap': 'round' }));
+    clock.appendChild(mk('line', { x1: 92, y1: -74, x2: 101, y2: -70, stroke: '#b9a48c', 'stroke-width': 2.4, 'stroke-linecap': 'round' }));
+    walls.appendChild(clock);
+
+    /* 왼쪽 벽 작은 액자 */
+    const frame = mk('g', { transform: 'matrix(-0.86 0.43 0 0.86 430 248)' });
+    frame.appendChild(mk('rect', { x: 250, y: -108, width: 58, height: 46, rx: 8, fill: '#f6eeee', stroke: '#e8d6c2', 'stroke-width': 2.5 }));
+    frame.appendChild(mk('path', { d: 'M256 -76 L272 -94 L282 -84 L292 -98 L302 -76 Z', fill: '#b6dcca' }));
+    walls.appendChild(frame);
+
     /* 오른쪽 벽 표찰 */
     const sign = mk('g', { transform: 'matrix(0.86 0.43 0 0.86 430 248)' });
     sign.appendChild(mk('rect', { x: 168, y: -124, width: 150, height: 62, rx: 14, fill: '#fff8ef', stroke: '#ecd9bf', 'stroke-width': 2 }));
@@ -416,7 +430,6 @@
     box(furn, 118, 146, 150, 176, 0, 26, '#e9d8f2', '#d0b9dd', '#dcc7e8');
     /* 회의실 — 둥근 탁자 */
     disc(furn, 415, 110, 36, 44, 44, '#fbead7', '#e2c8ab');
-    disc(furn, 415, 110, 10, 0, 40, '#e6d2ba', '#d3b899');
     box(furn, 400, 42, 430, 66, 0, 24, '#ffd9c8', '#e8b39c', '#f6c6b2');
     box(furn, 446, 140, 476, 164, 0, 24, '#ffd9c8', '#e8b39c', '#f6c6b2');
     /* 휴게실 — 소파 */
