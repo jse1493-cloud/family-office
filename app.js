@@ -396,7 +396,9 @@
         r: 22, side: tone.side, shadow: 'rgba(126,98,72,.16)', faceClass: 'rug-face'
       });
       layers.rugFaces[key] = face;
-      const lab = label(g, r.name, r.x0 + 14, r.y0 + 12, 8, tone.ink);
+      const lab = key === 'lounge'
+        ? label(g, r.name, r.x1 - 10, r.y1 - 8, 8, tone.ink, 30)
+        : label(g, r.name, r.x0 + 14, r.y0 + 12, 8, tone.ink);
       g.addEventListener('click', function () { moveMe(key); });
       g.addEventListener('keydown', function (ev) {
         if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); moveMe(key); }
@@ -409,12 +411,12 @@
     /* 열린 사무실 — 책상과 의자 */
     box(furn, 68, 58, 196, 126, 0, 42, '#f9ead8', '#dcc3a8', '#ecd4ba');
     box(furn, 104, 78, 148, 100, 42, 49, '#dfe4f1', '#b9c1d6', '#c9d0e2');
-    disc(furn, 132, 158, 17, 22, 22, '#e9d8f2', '#d3bcdd');
+    box(furn, 118, 146, 150, 176, 0, 26, '#e9d8f2', '#d0b9dd', '#dcc7e8');
     /* 회의실 — 둥근 탁자 */
     disc(furn, 415, 110, 36, 44, 44, '#fbead7', '#e2c8ab');
     disc(furn, 415, 110, 10, 0, 40, '#e6d2ba', '#d3b899');
-    disc(furn, 415, 62, 15, 20, 20, '#ffd9c8', '#eab9a4');
-    disc(furn, 462, 150, 15, 20, 20, '#ffd9c8', '#eab9a4');
+    box(furn, 400, 42, 430, 66, 0, 24, '#ffd9c8', '#e8b39c', '#f6c6b2');
+    box(furn, 446, 140, 476, 164, 0, 24, '#ffd9c8', '#e8b39c', '#f6c6b2');
     /* 휴게실 — 소파 */
     box(furn, 380, 258, 500, 306, 0, 34, '#ffd9bd', '#e8ab86', '#f6c3a2');
     box(furn, 380, 238, 500, 260, 0, 72, '#ffcdaf', '#e3a37d', '#f7bfa0');
